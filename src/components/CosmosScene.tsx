@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
+import { Html, OrbitControls } from '@react-three/drei'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import {
@@ -18,9 +18,11 @@ import { nearestOnScreen, toNdc } from '../lib/pick'
 function StarField({
   onPick,
   explorationStars,
+  selected,
 }: {
   onPick: (m: Molecule) => void
   explorationStars: ExplorationStar[]
+  selected?: Molecule | null
 }) {
   const molecules = useMemo(() => universe(), [])
   const pointsRef = useRef<THREE.Points>(null)
@@ -200,6 +202,128 @@ function StarField({
         </>
       )}
       <GoldilocksRing />
+      {selected && <SelectedStarMarker molecule={selected} />}
+    </group>
+  )
+}
+
+/**
+ * Marks the star the user is currently inspecting: a pulsing ring in the
+ * star's own class colour plus a crosshair reticle and a floating label, so
+ * the selection is unmistakable even while the camera is still flying in.
+ */
+function SelectedStarMarker({ molecule }: { molecule: Molecule }) {
+  const ringRef = useRef<THREE.Mesh>(null)
+  const ring2Ref = useRef<THREE.Mesh>(null)
+  const steadyRef = useRef<THREE.Mesh>(null)
+  const color = CLASS_COLORS[molecule.drugClass]
+
+  // A sprite without a texture renders as a hard white square, so the glow
+  // needs a real radial-gradient texture.
+  const glowTexture = useMemo(() => {
+    const size = 128
+    const canvas = document.createElement('canvas')
+    canvas.width = size
+    canvas.height = size
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
+      g.addColorStop(0, 'rgba(255,255,255,1)')
+      g.addColorStop(0.25, 'rgba(255,255,255,0.55)')
+      g.addColorStop(0.55, 'rgba(255,255,255,0.14)')
+      g.addColorStop(1, 'rgba(255,255,255,0)')
+      ctx.fillStyle = g
+      ctx.fillRect(0, 0, size, size)
+    }
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.needsUpdate = true
+    return tex
+  }, [])
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime()
+    // Two rings expanding outward on a 2s cycle, like a sonar ping.
+    if (ringRef.current) {
+      const p = (t * 0.5) % 1
+      ringRef.current.scale.setScalar(1 + p * 2.4)
+      const mat = ringRef.current.material as THREE.MeshBasicMaterial
+      mat.opacity = (1 - p) * 0.7
+    }
+    if (ring2Ref.current) {
+      const p = ((t * 0.5) + 0.5) % 1
+      ring2Ref.current.scale.setScalar(1 + p * 2.4)
+      const mat = ring2Ref.current.material as THREE.MeshBasicMaterial
+      mat.opacity = (1 - p) * 0.7
+    }
+    if (steadyRef.current) {
+      const pulse = 1 + Math.sin(t * 2) * 0.04
+      steadyRef.current.scale.setScalar(pulse)
+    }
+  })
+
+  return (
+    <group position={[molecule.x, molecule.y, molecule.z]}>
+      <sprite scale={[4.2, 4.2, 1]} renderOrder={5}>
+        <spriteMaterial
+          map={glowTexture}
+          color={color}
+          transparent
+          opacity={0.55}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </sprite>
+
+      {/* Steady ring marking the exact position. */}
+      <mesh ref={steadyRef} renderOrder={6}>
+        <ringGeometry args={[0.62, 0.74, 64]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={0.9}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+          depthTest={false}
+        />
+      </mesh>
+
+      <mesh ref={ringRef} renderOrder={6}>
+        <ringGeometry args={[0.95, 1.06, 64]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={0.7}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+          depthTest={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+
+      <mesh ref={ring2Ref} renderOrder={6}>
+        <ringGeometry args={[0.95, 1.06, 64]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={0.45}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+          depthTest={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+
+      <Html
+        center
+        distanceFactor={13}
+        position={[0, 2.5, 0]}
+        style={{ pointerEvents: 'none', userSelect: 'none' }}
+        zIndexRange={[20, 0]}
+      >
+        <div className="star-tag" style={{ borderColor: color, color }}>
+          {molecule.id}
+        </div>
+      </Html>
     </group>
   )
 }
@@ -426,10 +550,12 @@ interface CosmosSceneProps {
   onPick: (m: Molecule) => void
   explorationStars: ExplorationStar[]
   focus?: { x: number; y: number; z: number } | null
+  selected?: Molecule | null
 }
 
-export function CosmosScene({ onPick, explorationStars, focus }: CosmosSceneProps) {
+export function CosmosScene({ onPick, explorationStars, focus, selected }: CosmosSceneProps) {
   const controlsRef = useRef<any>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
   const fly = useRef({
     active: false,
     pos: new THREE.Vector3(40, 38, 80),
@@ -441,7 +567,26 @@ export function CosmosScene({ onPick, explorationStars, focus }: CosmosSceneProp
     const look = new THREE.Vector3(focus.x, focus.y, focus.z)
     // Park the camera a comfortable distance away, slightly above the star.
     const dir = new THREE.Vector3(0.35, 0.42, 1).normalize()
-    fly.current = { active: true, pos: look.clone().addScaledVector(dir, 17), look }
+    const distance = 13
+
+    // The detail panel covers the right edge of the stage, so centring the
+    // star would hide it behind the panel. Slide the orbit target sideways by
+    // half the panel width, expressed in world units at the new distance.
+    const width = wrapRef.current?.clientWidth ?? 0
+    const PANEL_PX = Math.min(340, width * 0.42)
+    let target = look
+    if (width > 480) {
+      const halfHeight = Math.tan((55 * Math.PI) / 360) * distance
+      const worldPerPx = (2 * halfHeight) / (wrapRef.current?.clientHeight ?? 1)
+      const shift = (PANEL_PX / 2) * worldPerPx
+      const right = new THREE.Vector3().crossVectors(
+        new THREE.Vector3(0, 1, 0),
+        dir,
+      ).normalize()
+      target = look.clone().addScaledVector(right, shift)
+    }
+
+    fly.current = { active: true, pos: target.clone().addScaledVector(dir, distance), look: target }
   }, [focus])
 
   const resetView = () => {
@@ -453,7 +598,7 @@ export function CosmosScene({ onPick, explorationStars, focus }: CosmosSceneProp
   }
 
   return (
-    <div className="cosmos-canvas" onDoubleClick={resetView}>
+    <div className="cosmos-canvas" onDoubleClick={resetView} ref={wrapRef}>
       <Canvas
         camera={{ position: [40, 38, 80], fov: 55, near: 0.1, far: 500 }}
         dpr={[1, 2]}
@@ -463,7 +608,11 @@ export function CosmosScene({ onPick, explorationStars, focus }: CosmosSceneProp
         <fog attach="fog" args={['#05060f', 120, 320]} />
         <ambientLight intensity={0.55} />
         <pointLight position={[0, 30, 0]} intensity={1.4} color="#aab8ff" distance={200} />
-        <StarField onPick={onPick} explorationStars={explorationStars} />
+        <StarField
+          onPick={onPick}
+          explorationStars={explorationStars}
+          selected={selected}
+        />
         <DustLayer />
         <OrbitControls
           ref={controlsRef}

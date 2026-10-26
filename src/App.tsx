@@ -69,7 +69,12 @@ export default function App() {
           </p>
         </div>
         <div className={`cosmos__stage ${entered ? '' : 'cosmos__stage--dim'}`}>
-          <CosmosScene onPick={handlePick} explorationStars={explorationStars} focus={focus} />
+          <CosmosScene
+            onPick={handlePick}
+            explorationStars={explorationStars}
+            focus={focus}
+            selected={selected}
+          />
           <UniverseLegend />
           <MoleculePanel molecule={selected} onClose={() => setSelected(null)} />
           <button type="button" className="explore-btn" onClick={triggerExploration}>

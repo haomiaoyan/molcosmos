@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, type CSSProperties } from 'react'
 import { CLASS_COLORS, CLASS_LABELS } from '../lib/galaxy'
 
 /** The five stations of the AI drug-design pipeline. */
@@ -79,10 +79,10 @@ export function PipelineSection() {
 export function FunnelSection() {
   const tiers = useMemo(
     () => [
-      { label: '筛选化合物', value: '5,000–10,000', width: 100, note: '虚拟筛选 + 高通量筛选' },
-      { label: '进入临床前', value: '~250', width: 62, note: 'ADMET 预测 + 结构优化' },
-      { label: '进入临床试验', value: '~5', width: 30, note: 'IND 申报后的人体试验' },
-      { label: '获批上市', value: '1', width: 10, note: '10,000 : 1 的终点' },
+      { label: '筛选化合物', value: '5,000–10,000', width: 100, mobileWidth: 100, note: '虚拟筛选 + 高通量筛选' },
+      { label: '进入临床前', value: '~250', width: 76, mobileWidth: 90, note: 'ADMET 预测 + 结构优化' },
+      { label: '进入临床试验', value: '~5', width: 52, mobileWidth: 80, note: 'IND 申报后的人体试验' },
+      { label: '获批上市', value: '1', width: 34, mobileWidth: 70, note: '10,000 : 1 的终点' },
     ],
     [],
   )
@@ -98,13 +98,25 @@ export function FunnelSection() {
         </p>
       </header>
       <div className="funnel">
-        {tiers.map((tier) => (
-          <div key={tier.label} className="funnel__tier" style={{ width: `${tier.width}%` }}>
+        {tiers.map((tier, i) => (
+          <div
+            key={tier.label}
+            className="funnel__tier"
+            style={
+              {
+                '--tier-w': `${tier.width}%`,
+                // Narrow screens cannot afford a 34%-wide final tier, so the
+                // taper is softened there and the note moves to its own line.
+                '--tier-w-mobile': `${tier.mobileWidth}%`,
+              } as CSSProperties
+            }
+          >
             <div className="funnel__tier-inner">
               <span className="funnel__value mono">{tier.value}</span>
               <span className="funnel__label">{tier.label}</span>
               <span className="funnel__note muted">{tier.note}</span>
             </div>
+            {i < tiers.length - 1 && <span className="funnel__arrow" aria-hidden="true" />}
           </div>
         ))}
         <p className="funnel__caption muted">
