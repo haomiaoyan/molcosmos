@@ -429,6 +429,19 @@ body {
   margin: 2px 0 0;
 }
 
+.legend__hint--generated {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-left: 12px;
+}
+
+.legend__hint--generated .legend__dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+}
+
 .explore-btn {
   position: absolute;
   left: 18px;
@@ -704,6 +717,13 @@ body {
   color: var(--danger);
   border-color: rgba(255, 107, 122, 0.5);
   background: rgba(255, 107, 122, 0.08);
+}
+
+/* Marks a molecule that exists only because the visitor ran an exploration. */
+.badge--generated {
+  color: var(--accent-3);
+  border-color: rgba(179, 137, 255, 0.5);
+  background: rgba(179, 137, 255, 0.1);
 }
 
 .mol-panel__radar {

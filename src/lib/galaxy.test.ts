@@ -9,7 +9,7 @@ import {
   universe,
   universeStats,
 } from './galaxy'
-import { classify } from './molecule'
+import { classify, layoutStructure } from './molecule'
 
 describe('universe', () => {
   it('builds exactly UNIVERSE_SIZE molecules deterministically', () => {
@@ -86,5 +86,29 @@ describe('exploration stars', () => {
     for (const s of spawnExplorationBatch(3)) {
       expect(Math.hypot(s.x, s.z)).toBeLessThanOrEqual(GALAXY_RADIUS + 4)
     }
+  })
+
+  it('gives every generated star full, inspectable molecule data', () => {
+    const batch = spawnExplorationBatch(2)
+    const ids = new Set<string>()
+    for (const s of batch) {
+      ids.add(s.id)
+      expect(s.exploration).toBe(true)
+      expect(s.id).toMatch(/^GEN-\d{2}\d{3}$/)
+      // Enough data for the detail panel: formula inputs, score, badges.
+      expect(s.props.counts.C).toBeGreaterThanOrEqual(6)
+      expect(s.props.mw).toBeGreaterThan(0)
+      expect(s.drugClass).toBe(classify(s.score))
+      expect(Array.isArray(s.lipinskiViolations)).toBe(true)
+      // A real layout can be built from it, like any universe molecule.
+      expect(layoutStructure(s).atoms.length).toBeGreaterThan(0)
+    }
+    expect(ids.size).toBe(batch.length)
+  })
+
+  it('resolves generated stars by id so they can be deep-linked and selected', () => {
+    const [first] = spawnExplorationBatch(4)
+    expect(findMoleculeById(first.id)?.id).toBe(first.id)
+    expect(findMoleculeById(first.id)?.score).toBe(first.score)
   })
 })

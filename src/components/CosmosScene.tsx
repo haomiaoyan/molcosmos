@@ -4,7 +4,9 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import {
   CLASS_COLORS,
+  EXPLORATION_COLOR,
   GALAXY_RADIUS,
+  starColor,
   universe,
   type ExplorationStar,
 } from '../lib/galaxy'
@@ -80,7 +82,7 @@ function StarField({
     const colors = new Float32Array(count * 3)
     const sizes = new Float32Array(count)
     const haloSizes = new Float32Array(count)
-    const color = new THREE.Color('#b389ff')
+    const color = new THREE.Color(EXPLORATION_COLOR)
     explorationStars.forEach((s, i) => {
       positions[i * 3] = s.x
       positions[i * 3 + 1] = s.y
@@ -117,8 +119,8 @@ function StarField({
   // Materials must be created unconditionally — hooks cannot live inside
   // the conditional JSX below or the hook count changes when exploration
   // stars first appear, crashing the canvas.
-  const expHaloMaterial = useMemo(() => makeStarMaterial('halo', '#b389ff'), [])
-  const expCoreMaterial = useMemo(() => makeStarMaterial('core', '#b389ff'), [])
+  const expHaloMaterial = useMemo(() => makeStarMaterial('halo', EXPLORATION_COLOR), [])
+  const expCoreMaterial = useMemo(() => makeStarMaterial('core', EXPLORATION_COLOR), [])
 
   // Screen-space picking. Raycasting against a Points cloud needs a tiny
   // hit threshold that becomes unusable at galaxy scale, so instead we
@@ -133,16 +135,18 @@ function StarField({
     const hitTest = (clientX: number, clientY: number) => {
       const rect = el.getBoundingClientRect()
       const p = toNdc(clientX, clientY, rect)
-      return nearestOnScreen(
-        molecules,
-        (m) => {
-          ndc.set(m.x, m.y, m.z).project(camera)
-          return { x: ndc.x, y: ndc.y, z: ndc.z }
-        },
-        p.x,
-        p.y,
-        0.05,
-      )
+      const project = (m: Molecule) => {
+        ndc.set(m.x, m.y, m.z).project(camera)
+        return { x: ndc.x, y: ndc.y, z: ndc.z }
+      }
+      // Generated samples sit inside the dense Goldilocks band, where a fixed
+      // star is almost always slightly nearer to the pointer. Give them a
+      // distance bias so they stay clickable without stealing clicks from a
+      // plainly closer fixed star.
+      const generated = nearestOnScreen(explorationStars, project, p.x, p.y, 0.06)
+      const fixed = nearestOnScreen(molecules, project, p.x, p.y, 0.05)
+      if (generated && (!fixed || generated.dist <= fixed.dist * 1.4)) return generated
+      return fixed
     }
 
     const handlePointerDown = (event: PointerEvent) => {
@@ -171,7 +175,7 @@ function StarField({
       el.removeEventListener('click', handleClick)
       el.removeEventListener('pointermove', handleMove)
     }
-  }, [camera, gl, molecules, onPick])
+  }, [camera, gl, molecules, explorationStars, onPick])
 
   return (
     <group>
@@ -216,7 +220,9 @@ function SelectedStarMarker({ molecule }: { molecule: Molecule }) {
   const ringRef = useRef<THREE.Mesh>(null)
   const ring2Ref = useRef<THREE.Mesh>(null)
   const steadyRef = useRef<THREE.Mesh>(null)
-  const color = CLASS_COLORS[molecule.drugClass]
+  // Generated samples keep their violet identity even when selected, so the
+  // ring does not suddenly claim the molecule belongs to a class band.
+  const color = starColor(molecule)
 
   // A sprite without a texture renders as a hard white square, so the glow
   // needs a real radial-gradient texture.

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CLASS_COLORS, CLASS_LABELS, universeStats } from '../lib/galaxy'
+import { CLASS_COLORS, CLASS_LABELS, universeStats, type ExplorationStar } from '../lib/galaxy'
 import {
   ELEMENT_COLORS,
   estimateHydrogens,
@@ -54,6 +54,7 @@ export function MoleculePanel({ molecule, onClose }: Props) {
 
   const cls = molecule.drugClass
   const formula = molecularFormula(molecule.props.counts, hydrogens)
+  const isExploration = Boolean((molecule as Partial<ExplorationStar>).exploration)
 
   return (
     <aside
@@ -102,6 +103,7 @@ export function MoleculePanel({ molecule, onClose }: Props) {
       </div>
 
       <div className="mol-panel__badges">
+        {isExploration && <span className="badge badge--generated">生成式采样</span>}
         <span className={`badge badge--${cls}`}>{CLASS_LABELS[cls]}</span>
         {molecule.lipinskiViolations.length === 0 ? (
           <span className="badge badge--clean">Lipinski 全通过 ✓</span>
@@ -214,7 +216,11 @@ export function UniverseLegend({ activeClass }: { activeClass?: string | null })
           <span className="mono legend__count">{stats.byClass[cls]}</span>
         </button>
       ))}
-      <p className="legend__hint muted">双击空白处返回全景 · 点击星辰查看分子</p>
+      <p className="legend__hint muted">双击空白处返回全景 · 所有星辰都可点击查看分子</p>
+      <p className="legend__hint legend__hint--generated muted">
+        <span className="legend__dot" style={{ background: '#b389ff' }} aria-hidden="true" />
+        紫色 = 生成式探索采样的候选
+      </p>
     </div>
   )
 }

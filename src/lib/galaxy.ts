@@ -43,12 +43,23 @@ export const GALAXY_CORE = 7
 export const ARMS = 3
 export const WINDINGS = 2.2
 
-/** Ephemeral stars spawned by the generative-exploration demo (session only). */
-export interface ExplorationStar {
-  x: number
-  y: number
-  z: number
-  score: number
+/** The violet used for every freshly generated sample. */
+export const EXPLORATION_COLOR = '#b389ff'
+
+/**
+ * Ephemeral stars spawned by the generative-exploration demo (session only).
+ * They are full molecules, not decorations: clicking one opens the same
+ * detail panel as any other star.
+ */
+export interface ExplorationStar extends Molecule {
+  exploration: true
+}
+
+/** Marker colour for any star: violet while it is a fresh sample, else its class colour. */
+export function starColor(molecule: Molecule): string {
+  return (molecule as Partial<ExplorationStar>).exploration
+    ? EXPLORATION_COLOR
+    : CLASS_COLORS[molecule.drugClass]
 }
 
 function buildMolecule(index: number): Molecule {
@@ -125,24 +136,53 @@ export function universeStats(): UniverseStats {
   return statsCache
 }
 
+/** Session-scoped registry so deep links and panels can resolve generated stars. */
+const explorationIndex = new Map<string, ExplorationStar>()
+
 /**
  * Spawns ephemeral stars for the generative-exploration demo: they cluster
  * tightly around the Goldilocks ring to visualise how a generative model
  * samples near promising regions instead of scanning the whole space.
+ *
+ * Each one is a real molecule with its own deterministic properties, so it can
+ * be clicked and inspected exactly like a star from the fixed universe. Seeds
+ * are rejected until the sampled candidate actually scores in the "very
+ * promising" band — that is the point of the demo.
  */
 export function spawnExplorationBatch(round: number, count = 26): ExplorationStar[] {
   const rng = makeRng(0xC0FFEE ^ (round * 7919 + 13))
   const stars: ExplorationStar[] = []
   for (let i = 0; i < count; i++) {
+    // Draw seeds until the generated candidate lands in the top band. Hit rate
+    // is roughly 1 in 10, so this stays cheap and deterministic.
+    let seed = 0
+    let props = generateMoleculeProps(0)
+    let score = 0
+    for (let attempt = 0; attempt < 600; attempt++) {
+      seed = (rng() * 0x7fffffff) >>> 0
+      props = generateMoleculeProps(seed)
+      score = druglikenessScore(props)
+      if (score >= 0.82) break
+    }
+
     const t = 0.5 + (rng() - 0.5) * 0.22
     const radius = GALAXY_CORE + t * (GALAXY_RADIUS - GALAXY_CORE) + (rng() - 0.5) * 3
     const angle = rng() * Math.PI * 2
-    stars.push({
+    const star: ExplorationStar = {
+      id: `GEN-${String(round).padStart(2, '0')}${String(i + 1).padStart(3, '0')}`,
+      index: i,
+      seed,
+      props,
+      score,
+      drugClass: classify(score),
+      lipinskiViolations: lipinskiViolations(props),
       x: round3(Math.cos(angle) * radius),
       y: round3((rng() - 0.5) * 2.2),
       z: round3(Math.sin(angle) * radius),
-      score: 0.82 + rng() * 0.17,
-    })
+      exploration: true,
+    }
+    stars.push(star)
+    explorationIndex.set(star.id, star)
   }
   return stars
 }
@@ -162,5 +202,5 @@ export function nearestMolecule(all: Molecule[], x: number, y: number, z: number
 }
 
 export function findMoleculeById(id: string): Molecule | null {
-  return universe().find((m) => m.id === id) ?? null
+  return explorationIndex.get(id) ?? universe().find((m) => m.id === id) ?? null
 }

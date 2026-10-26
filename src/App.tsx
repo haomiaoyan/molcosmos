@@ -65,7 +65,7 @@ export default function App() {
           <p className="section__eyebrow mono">主展览</p>
           <h2 className="section__title">分子宇宙</h2>
           <p className="cosmos__hint muted">
-            点击星辰查看分子 · 双击空白返回全景 · 紫色新星是「生成式探索」刚刚采样的结果
+            点击任意星辰查看分子 · 双击空白返回全景 · 紫色新星是「生成式探索」刚采样的候选，同样可以点开
           </p>
         </div>
         <div className={`cosmos__stage ${entered ? '' : 'cosmos__stage--dim'}`}>
