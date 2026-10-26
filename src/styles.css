@@ -360,7 +360,13 @@ body {
 
 .cosmos__stage {
   position: relative;
-  height: min(78vh, 760px);
+  /* Fit the stage in the viewport: the section header (eyebrow + title + hint)
+     plus the sticky nav take ~250px, so a plain 78vh stage pushed its bottom
+     edge past the fold on 1280x800 laptops and the detail panel anchored to
+     that edge got cut off. */
+  height: min(78vh, 760px, calc(100vh - 270px));
+  height: min(78vh, 760px, calc(100dvh - 270px));
+  min-height: 380px;
   border-radius: var(--radius);
   border: 1px solid var(--line-strong);
   overflow: hidden;
@@ -481,6 +487,25 @@ body {
 
 .mol-panel--closing {
   animation: panel-out 0.18s ease forwards;
+}
+
+/* The panel scrolls internally on short viewports; a slim themed scrollbar is
+   the only affordance that there is more content below the fold. */
+.mol-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mol-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mol-panel::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(110, 168, 254, 0.35);
+}
+
+.mol-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(110, 168, 254, 0.55);
 }
 
 @keyframes panel-in {
@@ -1002,24 +1027,56 @@ body {
     font-size: 0.8rem;
   }
 
+  /* Fit the stage inside one screen. The section header plus nav eat ~250px
+     on a phone, so the default 78vh stage pushed its bottom edge past the
+     fold and anything anchored to it (the detail panel) hung off-screen. */
+  .cosmos__stage {
+    height: min(calc(100vh - 260px), 760px);
+    height: min(calc(100dvh - 260px), 760px);
+    min-height: 400px;
+  }  /* Bottom sheet, anchored to the stage as on desktop. */
   .mol-panel {
-    left: 14px;
-    right: 14px;
+    left: 12px;
+    right: 12px;
     width: auto;
     top: auto;
-    bottom: 14px;
+    bottom: 12px;
     max-height: 62%;
+    padding: 14px 16px;
+    /* Near-opaque: over the bright galaxy core a translucent panel picks up a
+       large blurred halo from backdrop-filter. */
+    background: rgba(8, 10, 24, 0.96);
   }
 
+  .mol-panel__title {
+    font-size: 1.28rem;
+  }
+
+  .mol-panel__structure {
+    height: 168px;
+  }
+
+  /* The base rules pin the button top-left; clear the opposite edges or the
+     button stretches across the stage. */
+  .explore-btn {
+    left: 12px;
+    right: auto;
+    top: 12px;
+    bottom: auto;
+    padding: 10px 18px;
+    font-size: 0.88rem;
+  }
+
+  /* Legend drops below the button instead of sharing the corner with it. */
   .legend {
     bottom: auto;
-    top: 14px;
-    left: 14px;
+    top: 68px;
+    left: 12px;
+    gap: 4px;
   }
 
-  .explore-btn {
-    right: 14px;
-    bottom: 14px;
-    padding: 10px 18px;
+  .legend__item {
+    padding: 5px 11px;
+    font-size: 0.78rem;
   }
 }
