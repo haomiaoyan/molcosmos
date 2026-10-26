@@ -7,7 +7,8 @@ import {
   type Molecule,
   type MoleculeProps,
 } from '../lib/molecule'
-import { MolecularStructure3D } from './CosmosScene'
+import { MolecularStructureCanvas } from './CosmosScene'
+import { SceneBoundary } from './SceneBoundary'
 
 interface Props {
   molecule: Molecule | null
@@ -18,8 +19,8 @@ interface Props {
 const AXES = [
   { key: 'mw', label: '分子量', ideal: 350, scale: 700 },
   { key: 'logP', label: 'logP', ideal: 2.5, scale: 9 },
-  { key: 'hbd', label: '氢键供体', ideal: 2, scale: 6 },
-  { key: 'hba', label: '氢键受体', ideal: 5, scale: 12 },
+  { key: 'hbd', label: '供体', ideal: 2, scale: 6 },
+  { key: 'hba', label: '受体', ideal: 5, scale: 12 },
   { key: 'rings', label: '环数', ideal: 3, scale: 5 },
 ] as const
 
@@ -28,8 +29,8 @@ function radarPoints(props: MoleculeProps): string {
     const value = props[axis.key]
     const closeness = Math.exp(-((value - axis.ideal) ** 2) / (2 * (axis.scale / 4) ** 2))
     const angle = (i / AXES.length) * Math.PI * 2 - Math.PI / 2
-    const r = 8 + closeness * 72
-    return `${(60 + Math.cos(angle) * r).toFixed(1)},${(60 + Math.sin(angle) * r).toFixed(1)}`
+    const r = 6 + closeness * 50
+    return `${(Math.cos(angle) * r).toFixed(1)},${(Math.sin(angle) * r).toFixed(1)}`
   }).join(' ')
 }
 
@@ -70,7 +71,18 @@ export function MoleculePanel({ molecule, onClose }: Props) {
       </header>
 
       <div className="mol-panel__structure">
-        <MolecularStructure3D molecule={molecule} />
+        <div className="mol-panel__structure-canvas">
+          <SceneBoundary
+            fallback={
+              <div className="mol-panel__structure-fallback">
+                <span className="mono">{formula}</span>
+                <p className="muted">当前设备无法渲染 3D 结构，性质数据不受影响</p>
+              </div>
+            }
+          >
+            <MolecularStructureCanvas molecule={molecule} />
+          </SceneBoundary>
+        </div>
         <p className="mol-panel__hint muted">
           合成示例分子 · 球棍模型为示意布局，非真实构象
         </p>
@@ -103,47 +115,49 @@ export function MoleculePanel({ molecule, onClose }: Props) {
       </div>
 
       <div className="mol-panel__radar">
-        <svg viewBox="0 0 120 120" role="img" aria-label="性质雷达图">
-          {[0.33, 0.66, 1].map((ring) => (
-            <polygon
-              key={ring}
-              className="radar__ring"
-              points={AXES.map((_, i) => {
-                const angle = (i / AXES.length) * Math.PI * 2 - Math.PI / 2
-                const r = 8 + ring * 72
-                return `${60 + Math.cos(angle) * r},${60 + Math.sin(angle) * r}`
-              }).join(' ')}
-            />
-          ))}
-          {AXES.map((axis, i) => {
-            const angle = (i / AXES.length) * Math.PI * 2 - Math.PI / 2
-            return (
-              <line
-                key={axis.key}
-                className="radar__spoke"
-                x1={60}
-                y1={60}
-                x2={60 + Math.cos(angle) * 80}
-                y2={60 + Math.sin(angle) * 80}
+        <svg viewBox="0 0 160 150" role="img" aria-label="性质雷达图">
+          <g transform="translate(80, 78)">
+            {[0.33, 0.66, 1].map((ring) => (
+              <polygon
+                key={ring}
+                className="radar__ring"
+                points={AXES.map((_, i) => {
+                  const angle = (i / AXES.length) * Math.PI * 2 - Math.PI / 2
+                  const r = ring * 56
+                  return `${Math.cos(angle) * r},${Math.sin(angle) * r}`
+                }).join(' ')}
               />
-            )
-          })}
-          <polygon className="radar__value" points={radarPoints(molecule.props)} />
-          {AXES.map((axis, i) => {
-            const angle = (i / AXES.length) * Math.PI * 2 - Math.PI / 2
-            return (
-              <text
-                key={axis.key}
-                className="radar__label"
-                x={60 + Math.cos(angle) * 92}
-                y={60 + Math.sin(angle) * 92}
-                textAnchor="middle"
-                dominantBaseline="middle"
-              >
-                {axis.label}
-              </text>
-            )
-          })}
+            ))}
+            {AXES.map((axis, i) => {
+              const angle = (i / AXES.length) * Math.PI * 2 - Math.PI / 2
+              return (
+                <line
+                  key={axis.key}
+                  className="radar__spoke"
+                  x1={0}
+                  y1={0}
+                  x2={Math.cos(angle) * 56}
+                  y2={Math.sin(angle) * 56}
+                />
+              )
+            })}
+            <polygon className="radar__value" points={radarPoints(molecule.props)} />
+            {AXES.map((axis, i) => {
+              const angle = (i / AXES.length) * Math.PI * 2 - Math.PI / 2
+              return (
+                <text
+                  key={axis.key}
+                  className="radar__label"
+                  x={Math.cos(angle) * 68}
+                  y={Math.sin(angle) * 68}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                >
+                  {axis.label}
+                </text>
+              )
+            })}
+          </g>
         </svg>
       </div>
 

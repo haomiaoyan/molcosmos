@@ -333,27 +333,66 @@ export function MolecularStructure3D({
     }
   })
 
+  // Frame the structure: the layout spans a few bond lengths, so scale the
+  // camera distance with the atom count instead of using a fixed zoom.
+  const extent = useMemo(() => {
+    let max = 0
+    for (const a of atoms) max = Math.max(max, Math.hypot(a.x, a.y, a.z))
+    return Math.max(2.5, max)
+  }, [atoms])
+
   return (
-    <group ref={groupRef}>
-      {atoms.map((atom, i) => {
-        const radius = atom.element === 'S' ? 0.34 : atom.element === 'C' ? 0.26 : 0.24
-        return (
-          <mesh key={`a${i}`} position={[atom.x, atom.y, atom.z]}>
-            <sphereGeometry args={[radius, 20, 20]} />
-            <meshStandardMaterial
-              color={ELEMENT_COLORS[atom.element]}
-              emissive={ELEMENT_COLORS[atom.element]}
-              emissiveIntensity={0.35}
-              roughness={0.35}
-              metalness={0.1}
-            />
-          </mesh>
-        )
-      })}
-      {bonds.map(([a, b], i) => (
-        <Bond key={`b${i}`} a={atoms[a]} b={atoms[b]} />
-      ))}
-    </group>
+    <>
+      <PerspectiveCameraSync extent={extent} />
+      <group ref={groupRef}>
+        {atoms.map((atom, i) => {
+          const radius = atom.element === 'S' ? 0.34 : atom.element === 'C' ? 0.26 : 0.24
+          return (
+            <mesh key={`a${i}`} position={[atom.x, atom.y, atom.z]}>
+              <sphereGeometry args={[radius, 20, 20]} />
+              <meshStandardMaterial
+                color={ELEMENT_COLORS[atom.element]}
+                emissive={ELEMENT_COLORS[atom.element]}
+                emissiveIntensity={0.35}
+                roughness={0.35}
+                metalness={0.1}
+              />
+            </mesh>
+          )
+        })}
+        {bonds.map(([a, b], i) => (
+          <Bond key={`b${i}`} a={atoms[a]} b={atoms[b]} />
+        ))}
+      </group>
+    </>
+  )
+}
+
+/** Keeps the camera far enough back to see the whole molecule. */
+function PerspectiveCameraSync({ extent }: { extent: number }) {
+  const { camera } = useThree()
+  useEffect(() => {
+    const distance = extent * 2.05 + 1.4
+    camera.position.set(distance * 0.5, distance * 0.34, distance * 0.8)
+    camera.lookAt(0, 0, 0)
+    camera.updateProjectionMatrix()
+  }, [camera, extent])
+  return null
+}
+
+/** A self-contained canvas for the molecule detail panel. */
+export function MolecularStructureCanvas({ molecule }: { molecule: Molecule }) {
+  return (
+    <Canvas
+      camera={{ fov: 45, near: 0.1, far: 200, position: [8, 6, 14] }}
+      dpr={[1, 2]}
+      gl={{ antialias: true, alpha: true }}
+    >
+      <ambientLight intensity={0.7} />
+      <directionalLight position={[6, 10, 8]} intensity={1.5} />
+      <pointLight position={[-8, -4, -6]} intensity={0.9} color="#a78bfa" />
+      <MolecularStructure3D molecule={molecule} />
+    </Canvas>
   )
 }
 

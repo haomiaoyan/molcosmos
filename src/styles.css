@@ -422,15 +422,16 @@ body {
 
 .explore-btn {
   position: absolute;
-  right: 18px;
-  bottom: 18px;
-  z-index: 6;
+  left: 18px;
+  top: 18px;
+  z-index: 7;
   display: inline-flex;
   align-items: center;
   gap: 10px;
   border-radius: 999px;
   border: 1px solid rgba(179, 137, 255, 0.55);
-  background: rgba(179, 137, 255, 0.14);
+  background: rgba(179, 137, 255, 0.16);
+  backdrop-filter: blur(10px);
   color: #e9ddff;
   padding: 12px 24px;
   font-size: 0.95rem;
@@ -528,7 +529,7 @@ body {
 
 .mol-panel__structure {
   position: relative;
-  height: 200px;
+  height: 210px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--line);
   background: radial-gradient(240px 160px at 50% 40%, rgba(110, 168, 254, 0.1), transparent), #070a18;
@@ -536,14 +537,45 @@ body {
   overflow: hidden;
 }
 
-.mol-panel__structure .cosmos-canvas {
+.mol-panel__structure-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.mol-panel__structure-canvas canvas {
+  display: block;
   cursor: grab;
 }
 
-.mol-panel__hint {
-  margin: 6px 0 0;
-  font-size: 0.74rem;
+.mol-panel__structure-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
   text-align: center;
+  font-size: 0.8rem;
+}
+
+.mol-panel__structure-fallback p {
+  margin: 0;
+  font-size: 0.72rem;
+}
+
+.mol-panel__hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 4px 8px 6px;
+  font-size: 0.68rem;
+  text-align: center;
+  background: linear-gradient(to top, rgba(7, 10, 24, 0.92), transparent);
+  pointer-events: none;
 }
 
 .mol-panel__score {
@@ -632,8 +664,10 @@ body {
 }
 
 .mol-panel__radar svg {
-  width: 190px;
-  height: 190px;
+  width: 210px;
+  height: 197px;
+  display: block;
+  margin: 0 auto;
 }
 
 .radar__ring {
