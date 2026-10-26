@@ -9,6 +9,7 @@ import {
   starColor,
   universe,
   type ExplorationStar,
+  type MoleculeClass,
 } from '../lib/galaxy'
 import { ELEMENT_COLORS, layoutStructure, type Molecule } from '../lib/molecule'
 import { nearestOnScreen, toNdc } from '../lib/pick'
@@ -21,10 +22,12 @@ function StarField({
   onPick,
   explorationStars,
   selected,
+  activeClass,
 }: {
   onPick: (m: Molecule) => void
   explorationStars: ExplorationStar[]
   selected?: Molecule | null
+  activeClass?: MoleculeClass | null
 }) {
   const molecules = useMemo(() => universe(), [])
   const pointsRef = useRef<THREE.Points>(null)
@@ -48,18 +51,22 @@ function StarField({
       color.set(CLASS_COLORS[m.drugClass])
       // Brighter stars for higher scores — the "AI 打分" made visible.
       const boost = 0.55 + m.score * 0.45
-      colors[i * 3] = color.r * boost
-      colors[i * 3 + 1] = color.g * boost
-      colors[i * 3 + 2] = color.b * boost
-      sizes[i] = 0.45 + m.score * 1.15
+      // Isolating a class fades the rest into the background rather than
+      // hiding them: the constellation should still read as one galaxy.
+      const dimmed = activeClass !== null && activeClass !== undefined && m.drugClass !== activeClass
+      const weight = dimmed ? 0.16 : 1
+      colors[i * 3] = color.r * boost * weight
+      colors[i * 3 + 1] = color.g * boost * weight
+      colors[i * 3 + 2] = color.b * boost * weight
+      sizes[i] = (0.45 + m.score * 1.15) * (dimmed ? 0.55 : 1)
 
       haloPositions[i * 3] = m.x
       haloPositions[i * 3 + 1] = m.y
       haloPositions[i * 3 + 2] = m.z
-      haloColors[i * 3] = color.r
-      haloColors[i * 3 + 1] = color.g
-      haloColors[i * 3 + 2] = color.b
-      haloSizes[i] = (0.45 + m.score * 1.15) * 4.5
+      haloColors[i * 3] = color.r * weight
+      haloColors[i * 3 + 1] = color.g * weight
+      haloColors[i * 3 + 2] = color.b * weight
+      haloSizes[i] = (0.45 + m.score * 1.15) * 4.5 * (dimmed ? 0.5 : 1)
     })
 
     const geometry = new THREE.BufferGeometry()
@@ -73,7 +80,7 @@ function StarField({
     haloGeometry.setAttribute('aSize', new THREE.BufferAttribute(haloSizes, 1))
 
     return { geometry, haloGeometry }
-  }, [molecules])
+  }, [molecules, activeClass])
 
   const { expGeometry, expHaloGeometry } = useMemo(() => {
     const count = explorationStars.length
@@ -557,9 +564,10 @@ interface CosmosSceneProps {
   explorationStars: ExplorationStar[]
   focus?: { x: number; y: number; z: number } | null
   selected?: Molecule | null
+  activeClass?: MoleculeClass | null
 }
 
-export function CosmosScene({ onPick, explorationStars, focus, selected }: CosmosSceneProps) {
+export function CosmosScene({ onPick, explorationStars, focus, selected, activeClass }: CosmosSceneProps) {
   const controlsRef = useRef<any>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const fly = useRef({
@@ -579,17 +587,27 @@ export function CosmosScene({ onPick, explorationStars, focus, selected }: Cosmo
     // star would hide it behind the panel. Slide the orbit target sideways by
     // half the panel width, expressed in world units at the new distance.
     const width = wrapRef.current?.clientWidth ?? 0
+    const height = wrapRef.current?.clientHeight ?? 1
     const PANEL_PX = Math.min(340, width * 0.42)
     let target = look
     if (width > 480) {
       const halfHeight = Math.tan((55 * Math.PI) / 360) * distance
-      const worldPerPx = (2 * halfHeight) / (wrapRef.current?.clientHeight ?? 1)
+      const worldPerPx = (2 * halfHeight) / height
       const shift = (PANEL_PX / 2) * worldPerPx
       const right = new THREE.Vector3().crossVectors(
         new THREE.Vector3(0, 1, 0),
         dir,
       ).normalize()
       target = look.clone().addScaledVector(right, shift)
+    } else {
+      // On a phone the panel is a bottom sheet covering the lower ~62% of the
+      // stage, leaving only a short band under the search field. The orbit
+      // target lands at the canvas centre, so nudge the target DOWN to lift the
+      // star into that band; a larger nudge pushes it up behind the search bar.
+      const halfHeight = Math.tan((55 * Math.PI) / 360) * distance
+      const worldPerPx = (2 * halfHeight) / height
+      const shift = -height * 0.05 * worldPerPx
+      target = look.clone().addScaledVector(new THREE.Vector3(0, 1, 0), shift)
     }
 
     fly.current = { active: true, pos: target.clone().addScaledVector(dir, distance), look: target }
@@ -618,6 +636,7 @@ export function CosmosScene({ onPick, explorationStars, focus, selected }: Cosmo
           onPick={onPick}
           explorationStars={explorationStars}
           selected={selected}
+          activeClass={activeClass}
         />
         <DustLayer />
         <OrbitControls

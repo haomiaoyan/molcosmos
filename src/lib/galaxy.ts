@@ -22,6 +22,8 @@ import {
 } from './molecule'
 import { makeRng } from './rng'
 
+export type { MoleculeClass } from './molecule'
+
 export const UNIVERSE_SIZE = 600
 
 export const CLASS_COLORS: Record<MoleculeClass, string> = {

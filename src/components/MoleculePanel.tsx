@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CLASS_COLORS, CLASS_LABELS, universeStats, type ExplorationStar } from '../lib/galaxy'
+import { CLASS_COLORS, CLASS_LABELS, universeStats, type ExplorationStar, type MoleculeClass as ClassKey } from '../lib/galaxy'
 import {
   ELEMENT_COLORS,
   estimateHydrogens,
@@ -13,6 +13,9 @@ import { SceneBoundary } from './SceneBoundary'
 interface Props {
   molecule: Molecule | null
   onClose: () => void
+  saved?: boolean
+  onToggleSave?: (id: string) => void
+  onShare?: (molecule: Molecule) => void
 }
 
 /** Radar-chart axes for the property panel. */
@@ -34,7 +37,7 @@ function radarPoints(props: MoleculeProps): string {
   }).join(' ')
 }
 
-export function MoleculePanel({ molecule, onClose }: Props) {
+export function MoleculePanel({ molecule, onClose, saved = false, onToggleSave, onShare }: Props) {
   const hydrogens = useMemo(
     () => (molecule ? estimateHydrogens(molecule.props.counts, molecule.props.rings) : 0),
     [molecule],
@@ -70,6 +73,32 @@ export function MoleculePanel({ molecule, onClose }: Props) {
           ✕
         </button>
       </header>
+
+      {(onToggleSave || onShare) && (
+        <div className="mol-panel__actions">
+          {onToggleSave && (
+            <button
+              type="button"
+              className={`mol-panel__action ${saved ? 'mol-panel__action--on' : ''}`}
+              onClick={() => onToggleSave(molecule.id)}
+              aria-pressed={saved}
+              title={saved ? '移出短名单' : '加入短名单'}
+            >
+              {saved ? '★ 已收藏' : '☆ 收藏'}
+            </button>
+          )}
+          {onShare && (
+            <button
+              type="button"
+              className="mol-panel__action"
+              onClick={() => onShare(molecule)}
+              title="复制这个分子的链接"
+            >
+              ⧉ 复制链接
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="mol-panel__structure">
         <div className="mol-panel__structure-canvas">
@@ -201,7 +230,13 @@ export function MoleculePanel({ molecule, onClose }: Props) {
   )
 }
 
-export function UniverseLegend({ activeClass }: { activeClass?: string | null }) {
+export function UniverseLegend({
+  activeClass,
+  onSelectClass,
+}: {
+  activeClass?: string | null
+  onSelectClass?: (cls: ClassKey) => void
+}) {
   const stats = useMemo(() => universeStats(), [])
   return (
     <div className="legend" aria-label="星等图例">
@@ -210,6 +245,9 @@ export function UniverseLegend({ activeClass }: { activeClass?: string | null })
           key={cls}
           type="button"
           className={`legend__item ${activeClass === cls ? 'legend__item--active' : ''}`}
+          onClick={onSelectClass ? () => onSelectClass(cls) : undefined}
+          aria-pressed={activeClass === cls}
+          title={onSelectClass ? (activeClass === cls ? '取消高亮' : `只高亮${CLASS_LABELS[cls]}`) : undefined}
         >
           <span className="legend__dot" style={{ background: CLASS_COLORS[cls] }} />
           <span className="legend__label">{CLASS_LABELS[cls]}</span>

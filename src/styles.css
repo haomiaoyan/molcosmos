@@ -390,7 +390,7 @@ body {
 .legend {
   position: absolute;
   left: 18px;
-  bottom: 18px;
+  bottom: 62px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -407,8 +407,21 @@ body {
   background: rgba(5, 6, 15, 0.72);
   backdrop-filter: blur(10px);
   color: var(--text-dim);
-  cursor: default;
+  cursor: pointer;
+  font: inherit;
   font-size: 0.86rem;
+  transition: border-color 0.18s, background 0.18s, opacity 0.18s;
+}
+
+.legend__item:hover {
+  border-color: var(--line-strong);
+  background: rgba(12, 16, 36, 0.86);
+}
+
+.legend__item--active {
+  border-color: currentColor;
+  background: rgba(20, 26, 54, 0.9);
+  color: var(--text);
 }
 
 .legend__dot {
@@ -571,6 +584,38 @@ body {
   margin: 2px 0 0;
   font-size: 1.5rem;
   letter-spacing: 0.03em;
+}
+
+.mol-panel__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 8px;
+}
+
+.mol-panel__action {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text-dim);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font: inherit;
+  font-size: 0.74rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.18s, border-color 0.18s, background 0.18s;
+}
+
+.mol-panel__action:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+  background: rgba(110, 168, 254, 0.12);
+}
+
+.mol-panel__action--on {
+  color: var(--accent);
+  border-color: rgba(255, 212, 126, 0.55);
+  background: rgba(255, 212, 126, 0.1);
 }
 
 .mol-panel__close {
@@ -1121,7 +1166,344 @@ body {
   margin: 4px 0;
 }
 
+/* ---------- search + shortlist + toast ---------- */
+
+.cosmos-search {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(340px, calc(100% - 400px));
+  min-width: 210px;
+  z-index: 9;
+}
+
+.cosmos-search__field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: rgba(5, 6, 15, 0.78);
+  backdrop-filter: blur(12px);
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.cosmos-search--open .cosmos-search__field,
+.cosmos-search__field:focus-within {
+  border-color: rgba(110, 168, 254, 0.65);
+  box-shadow: 0 0 0 3px rgba(110, 168, 254, 0.12);
+}
+
+.cosmos-search__icon {
+  color: var(--text-mute);
+  font-size: 0.95rem;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.cosmos-search__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.86rem;
+  padding: 4px 0;
+  outline: none;
+}
+
+.cosmos-search__input::placeholder {
+  color: var(--text-mute);
+}
+
+/* Chrome's own clear button fights the themed field. */
+.cosmos-search__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.cosmos-search__dice {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.18s, border-color 0.18s, transform 0.18s;
+}
+
+.cosmos-search__dice:hover {
+  color: var(--accent-4);
+  border-color: var(--accent-4);
+  transform: rotate(45deg);
+}
+
+.cosmos-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 5px;
+  list-style: none;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background: rgba(8, 10, 24, 0.96);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow);
+  max-height: 264px;
+  overflow-y: auto;
+  animation: results-in 0.14s ease;
+}
+
+@keyframes results-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.cosmos-results__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cosmos-results__item--active {
+  background: rgba(110, 168, 254, 0.16);
+}
+
+.cosmos-results__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.cosmos-results__id {
+  color: var(--text);
+  flex: 0 0 auto;
+}
+
+.cosmos-results__formula {
+  color: var(--text-dim);
+  flex: 0 0 auto;
+  font-size: 0.74rem;
+}
+
+.cosmos-results__class {
+  margin-left: auto;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.cosmos-results__why {
+  font-size: 0.68rem;
+  opacity: 0.7;
+  flex: 0 0 auto;
+}
+
+/* --- shortlist --- */
+
+.shortlist {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  /* Below the detail panel (z 8) so the panel always wins the corner. */
+  z-index: 7;
+}
+
+.shortlist__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(5, 6, 15, 0.72);
+  backdrop-filter: blur(10px);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: color 0.18s, border-color 0.18s;
+}
+
+.shortlist__toggle:hover,
+.shortlist--open .shortlist__toggle {
+  color: var(--accent);
+  border-color: rgba(255, 212, 126, 0.5);
+}
+
+.shortlist__count {
+  font-size: 0.72rem;
+  color: var(--text-mute);
+}
+
+.shortlist__body {
+  position: absolute;
+  left: calc(100% + 8px);
+  bottom: 0;
+  width: min(300px, calc(100vw - 60px));
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background: rgba(8, 10, 24, 0.96);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow);
+  animation: results-in 0.14s ease;
+}
+
+.shortlist__empty {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.shortlist__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 3px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.shortlist__row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.shortlist__open {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.78rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.shortlist__open:hover {
+  background: rgba(110, 168, 254, 0.14);
+}
+
+.shortlist__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.shortlist__id {
+  flex: 0 0 auto;
+}
+
+.shortlist__score {
+  font-size: 0.72rem;
+  flex: 0 0 auto;
+}
+
+.shortlist__class {
+  margin-left: auto;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.shortlist__remove {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-mute);
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+
+.shortlist__remove:hover {
+  color: var(--danger);
+}
+
+.shortlist__clear {
+  width: 100%;
+  margin-top: 8px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-mute);
+  font: inherit;
+  font-size: 0.74rem;
+  cursor: pointer;
+}
+
+.shortlist__clear:hover {
+  color: var(--danger);
+  border-color: rgba(255, 107, 122, 0.45);
+}
+
+/* --- toast --- */
+
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 20;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: rgba(8, 10, 24, 0.95);
+  backdrop-filter: blur(12px);
+  color: var(--text);
+  font-size: 0.78rem;
+  box-shadow: var(--shadow);
+  animation: toast-in 0.2s ease;
+  max-width: calc(100% - 36px);
+  text-align: center;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
 /* ---------- responsive ---------- */
+
+@media (max-width: 900px) and (min-width: 641px) {
+  /* Centre stage is too narrow for a centred search bar beside the panel. */
+  .cosmos-search {
+    left: 18px;
+    top: 72px;
+    transform: none;
+    width: min(320px, calc(100% - 376px));
+  }
+}
 
 @media (max-width: 640px) {
   .app {
@@ -1181,10 +1563,28 @@ body {
     font-size: 0.88rem;
   }
 
-  /* Legend drops below the button instead of sharing the corner with it. */
+  /* Search drops to its own row under the explore button. */
+  .cosmos-search {
+    left: 12px;
+    right: 12px;
+    top: 60px;
+    transform: none;
+    width: auto;
+    min-width: 0;
+  }
+
+  .cosmos-results {
+    max-height: 216px;
+  }
+
+  .cosmos-results__why {
+    display: none;
+  }
+
+  /* Legend drops below the search row instead of sharing the corner. */
   .legend {
-    bottom: auto;
-    top: 68px;
+    bottom: 64px;
+    top: auto;
     left: 12px;
     gap: 4px;
   }
@@ -1192,5 +1592,21 @@ body {
   .legend__item {
     padding: 5px 11px;
     font-size: 0.78rem;
+  }
+
+  .shortlist {
+    left: 12px;
+    bottom: 12px;
+  }
+
+  /* Opening to the right would run off a phone screen; stack upward instead. */
+  .shortlist__body {
+    left: 0;
+    bottom: calc(100% + 8px);
+    width: min(280px, calc(100vw - 48px));
+  }
+
+  .toast {
+    bottom: 56px;
   }
 }
