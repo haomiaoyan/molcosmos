@@ -1,4 +1,5 @@
-import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { OrbitControls } from '@react-three/drei'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import {
@@ -8,6 +9,7 @@ import {
   type ExplorationStar,
 } from '../lib/galaxy'
 import { ELEMENT_COLORS, layoutStructure, type Molecule } from '../lib/molecule'
+import { nearestOnScreen, toNdc } from '../lib/pick'
 
 /* ------------------------------------------------------------------ */
 /* Galaxy point cloud                                                  */
@@ -23,6 +25,7 @@ function StarField({
   const molecules = useMemo(() => universe(), [])
   const pointsRef = useRef<THREE.Points>(null)
   const haloRef = useRef<THREE.Points>(null)
+  const { camera, gl } = useThree()
 
   const { geometry, haloGeometry } = useMemo(() => {
     const positions = new Float32Array(molecules.length * 3)
@@ -115,11 +118,58 @@ function StarField({
   const expHaloMaterial = useMemo(() => makeStarMaterial('halo', '#b389ff'), [])
   const expCoreMaterial = useMemo(() => makeStarMaterial('core', '#b389ff'), [])
 
-  const handleClick = (event: ThreeEvent<MouseEvent>) => {
-    event.stopPropagation()
-    const index = event.index
-    if (typeof index === 'number' && molecules[index]) onPick(molecules[index])
-  }
+  // Screen-space picking. Raycasting against a Points cloud needs a tiny
+  // hit threshold that becomes unusable at galaxy scale, so instead we
+  // project every star to NDC and take the nearest one to the pointer.
+  useEffect(() => {
+    const el = gl.domElement
+    const ndc = new THREE.Vector3()
+    let downX = 0
+    let downY = 0
+    let downAt = 0
+
+    const hitTest = (clientX: number, clientY: number) => {
+      const rect = el.getBoundingClientRect()
+      const p = toNdc(clientX, clientY, rect)
+      return nearestOnScreen(
+        molecules,
+        (m) => {
+          ndc.set(m.x, m.y, m.z).project(camera)
+          return { x: ndc.x, y: ndc.y, z: ndc.z }
+        },
+        p.x,
+        p.y,
+        0.05,
+      )
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      downX = event.clientX
+      downY = event.clientY
+      downAt = performance.now()
+    }
+
+    const handleClick = (event: MouseEvent) => {
+      // Ignore the click that ends an orbit drag.
+      if (performance.now() - downAt > 700) return
+      if (Math.hypot(event.clientX - downX, event.clientY - downY) > 6) return
+      const hit = hitTest(event.clientX, event.clientY)
+      if (hit) onPick(hit.item)
+    }
+
+    const handleMove = (event: PointerEvent) => {
+      el.style.cursor = hitTest(event.clientX, event.clientY) ? 'pointer' : 'grab'
+    }
+
+    el.addEventListener('pointerdown', handlePointerDown)
+    el.addEventListener('click', handleClick)
+    el.addEventListener('pointermove', handleMove)
+    return () => {
+      el.removeEventListener('pointerdown', handlePointerDown)
+      el.removeEventListener('click', handleClick)
+      el.removeEventListener('pointermove', handleMove)
+    }
+  }, [camera, gl, molecules, onPick])
 
   return (
     <group>
@@ -133,7 +183,6 @@ function StarField({
         ref={pointsRef}
         geometry={geometry}
         material={useMemo(() => makeStarMaterial('core'), [])}
-        onPointerDown={handleClick}
         renderOrder={2}
       />
       {expGeometry && expHaloGeometry && (
@@ -341,27 +390,31 @@ interface CosmosSceneProps {
 }
 
 export function CosmosScene({ onPick, explorationStars, focus }: CosmosSceneProps) {
-  const target = useRef(new THREE.Vector3(0, 0, 0))
-  const radius = useRef(95)
-  const height = useRef(38)
-  const flying = useRef(0)
+  const controlsRef = useRef<any>(null)
+  const fly = useRef({
+    active: false,
+    pos: new THREE.Vector3(40, 38, 80),
+    look: new THREE.Vector3(0, 0, 0),
+  })
 
   useEffect(() => {
-    if (focus) {
-      target.current.set(focus.x, focus.y, focus.z)
-      radius.current = 14
-      height.current = 5
-      flying.current = 1
-    }
+    if (!focus) return
+    const look = new THREE.Vector3(focus.x, focus.y, focus.z)
+    // Park the camera a comfortable distance away, slightly above the star.
+    const dir = new THREE.Vector3(0.35, 0.42, 1).normalize()
+    fly.current = { active: true, pos: look.clone().addScaledVector(dir, 17), look }
   }, [focus])
 
+  const resetView = () => {
+    fly.current = {
+      active: true,
+      pos: new THREE.Vector3(40, 38, 80),
+      look: new THREE.Vector3(0, 0, 0),
+    }
+  }
+
   return (
-    <div className="cosmos-canvas" onDoubleClick={() => {
-      target.current.set(0, 0, 0)
-      radius.current = 95
-      height.current = 38
-      flying.current = 1
-    }}>
+    <div className="cosmos-canvas" onDoubleClick={resetView}>
       <Canvas
         camera={{ position: [40, 38, 80], fov: 55, near: 0.1, far: 500 }}
         dpr={[1, 2]}
@@ -373,39 +426,48 @@ export function CosmosScene({ onPick, explorationStars, focus }: CosmosSceneProp
         <pointLight position={[0, 30, 0]} intensity={1.4} color="#aab8ff" distance={200} />
         <StarField onPick={onPick} explorationStars={explorationStars} />
         <DustLayer />
-        <OrbitRig target={target} radius={radius} height={height} flying={flying} />
+        <OrbitControls
+          ref={controlsRef}
+          makeDefault
+          enableDamping
+          dampingFactor={0.07}
+          enablePan={false}
+          autoRotate
+          autoRotateSpeed={0.35}
+          minDistance={6}
+          maxDistance={220}
+          rotateSpeed={0.55}
+          zoomSpeed={0.8}
+        />
+        <FlyRig controls={controlsRef} fly={fly} />
       </Canvas>
     </div>
   )
 }
 
 /**
- * Gentle auto-orbit with damping; double-click resets the view. The camera
- * eases toward the current focus instead of jumping.
+ * Eases the camera toward a focus target. OrbitControls keeps ownership of
+ * the camera at all times, so dragging and zooming stay responsive; auto
+ * orbit pauses while a flight is in progress.
  */
-function OrbitRig({
-  target,
-  radius,
-  height,
-  flying,
+function FlyRig({
+  controls,
+  fly,
 }: {
-  target: React.MutableRefObject<THREE.Vector3>
-  radius: React.MutableRefObject<number>
-  height: React.MutableRefObject<number>
-  flying: React.MutableRefObject<number>
+  controls: React.MutableRefObject<any>
+  fly: React.MutableRefObject<{ active: boolean; pos: THREE.Vector3; look: THREE.Vector3 }>
 }) {
-  useFrame(({ camera, clock }, delta) => {
-    const t = clock.getElapsedTime()
-    const wantAngle = t * 0.05
-    const wantPos = new THREE.Vector3(
-      target.current.x + Math.cos(wantAngle) * radius.current,
-      target.current.y + height.current,
-      target.current.z + Math.sin(wantAngle) * radius.current,
-    )
-    const speed = flying.current > 0 ? 0.06 : 0.18
-    camera.position.lerp(wantPos, 1 - Math.exp(-speed * 60 * delta))
-    flying.current = Math.max(0, flying.current - delta * 0.8)
-    camera.lookAt(target.current)
+  useFrame(({ camera }, delta) => {
+    const c = controls.current
+    if (c) c.autoRotate = !fly.current.active
+    if (!fly.current.active) return
+    const k = 1 - Math.exp(-4 * delta)
+    camera.position.lerp(fly.current.pos, k)
+    if (c) {
+      c.target.lerp(fly.current.look, k)
+      c.update()
+    }
+    if (camera.position.distanceTo(fly.current.pos) < 0.4) fly.current.active = false
   })
   return null
 }
