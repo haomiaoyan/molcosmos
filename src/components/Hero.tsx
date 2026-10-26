@@ -10,6 +10,7 @@ const FEATURES = [
   ['hero.f1.title', 'hero.f1.body'],
   ['hero.f2.title', 'hero.f2.body'],
   ['hero.f3.title', 'hero.f3.body'],
+  ['hero.f4.title', 'hero.f4.body'],
 ] as const
 
 export function Hero({ onStart, onExplore }: Props) {

@@ -432,7 +432,8 @@ body {
 
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  /* Four cards: a fixed 2x2 reads as deliberate, auto-fit would leave one orphan. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   list-style: none;
   padding: 0;
@@ -1699,6 +1700,12 @@ html[lang='en'] .limits-list strong {
 @media (max-width: 640px) {
   .app {
     padding: 0 14px;
+  }
+
+  /* Two 170px columns on a phone squeeze the copy into 4-line paragraphs;
+     stack them instead and keep the 2x2 symmetry for anything wider. */
+  .feature-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .topnav {

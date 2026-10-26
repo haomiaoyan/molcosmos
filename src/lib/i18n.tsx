@@ -82,6 +82,11 @@ const S = {
     '3D 球棍模型、性质雷达图、Lipinski 徽章——每个数字都来自你眼前这份代码，可以手算复核。',
     'A 3D ball-and-stick model, a property radar and Lipinski badges — every number comes from the code in front of you and can be recomputed by hand.',
   ],
+  'hero.f4.title': ['五关卡，一条流水线', 'Five stages, one pipeline'],
+  'hero.f4.body': [
+    '靶点确认、虚拟筛选、分子生成、性质预测、临床试验——每一关都标出 AI 到底参与了多少，以及哪一关它还插不上手。',
+    'Target ID, virtual screening, generation, property prediction, trials — each stage marks how much AI actually does, and where it still cannot help.',
+  ],
 
   /* ---------- cosmos stage ---------- */
   'cosmos.eyebrow': ['主展览', 'Main exhibit'],
