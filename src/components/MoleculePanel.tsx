@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CLASS_COLORS, CLASS_LABELS, universeStats, type ExplorationStar, type MoleculeClass as ClassKey } from '../lib/galaxy'
+import {
+  CLASS_COLORS,
+  CLASS_LABEL_KEYS,
+  universeStats,
+  type ExplorationStar,
+  type MoleculeClass as ClassKey,
+} from '../lib/galaxy'
+import { useI18n, type StringKey } from '../lib/i18n'
 import {
   ELEMENT_COLORS,
   estimateHydrogens,
@@ -18,14 +25,17 @@ interface Props {
   onShare?: (molecule: Molecule) => void
 }
 
-/** Radar-chart axes for the property panel. */
+/**
+ * Radar-chart axes for the property panel. Only geometry lives here; the
+ * labels are i18n keys so the chart re-renders in the active language.
+ */
 const AXES = [
-  { key: 'mw', label: '分子量', ideal: 350, scale: 700 },
-  { key: 'logP', label: 'logP', ideal: 2.5, scale: 9 },
-  { key: 'hbd', label: '供体', ideal: 2, scale: 6 },
-  { key: 'hba', label: '受体', ideal: 5, scale: 12 },
-  { key: 'rings', label: '环数', ideal: 3, scale: 5 },
-] as const
+  { key: 'mw', label: 'panel.axis.mw', ideal: 350, scale: 700 },
+  { key: 'logP', label: 'panel.axis.logP', ideal: 2.5, scale: 9 },
+  { key: 'hbd', label: 'panel.axis.hbd', ideal: 2, scale: 6 },
+  { key: 'hba', label: 'panel.axis.hba', ideal: 5, scale: 12 },
+  { key: 'rings', label: 'panel.axis.rings', ideal: 3, scale: 5 },
+] as const satisfies readonly { key: keyof MoleculeProps; label: StringKey; ideal: number; scale: number }[]
 
 function radarPoints(props: MoleculeProps): string {
   return AXES.map((axis, i) => {
@@ -38,6 +48,7 @@ function radarPoints(props: MoleculeProps): string {
 }
 
 export function MoleculePanel({ molecule, onClose, saved = false, onToggleSave, onShare }: Props) {
+  const { t } = useI18n()
   const hydrogens = useMemo(
     () => (molecule ? estimateHydrogens(molecule.props.counts, molecule.props.rings) : 0),
     [molecule],
@@ -62,14 +73,14 @@ export function MoleculePanel({ molecule, onClose, saved = false, onToggleSave, 
   return (
     <aside
       className={`mol-panel ${panelClosing ? 'mol-panel--closing' : ''}`}
-      aria-label={`分子 ${molecule.id} 详情`}
+      aria-label={t('panel.aria', { id: molecule.id })}
     >
       <header className="mol-panel__head">
         <div>
           <p className="mol-panel__eyebrow mono">{molecule.id}</p>
           <h3 className="mol-panel__title">{formula}</h3>
         </div>
-        <button type="button" className="mol-panel__close" onClick={close} aria-label="关闭详情">
+        <button type="button" className="mol-panel__close" onClick={close} aria-label={t('panel.close')}>
           ✕
         </button>
       </header>
@@ -82,9 +93,9 @@ export function MoleculePanel({ molecule, onClose, saved = false, onToggleSave, 
               className={`mol-panel__action ${saved ? 'mol-panel__action--on' : ''}`}
               onClick={() => onToggleSave(molecule.id)}
               aria-pressed={saved}
-              title={saved ? '移出短名单' : '加入短名单'}
+              title={saved ? t('panel.unsaveTitle') : t('panel.saveTitle')}
             >
-              {saved ? '★ 已收藏' : '☆ 收藏'}
+              {saved ? t('panel.saved') : t('panel.save')}
             </button>
           )}
           {onShare && (
@@ -92,9 +103,9 @@ export function MoleculePanel({ molecule, onClose, saved = false, onToggleSave, 
               type="button"
               className="mol-panel__action"
               onClick={() => onShare(molecule)}
-              title="复制这个分子的链接"
+              title={t('panel.shareTitle')}
             >
-              ⧉ 复制链接
+              {t('panel.share')}
             </button>
           )}
         </div>
@@ -106,21 +117,23 @@ export function MoleculePanel({ molecule, onClose, saved = false, onToggleSave, 
             fallback={
               <div className="mol-panel__structure-fallback">
                 <span className="mono">{formula}</span>
-                <p className="muted">当前设备无法渲染 3D 结构，性质数据不受影响</p>
+                <p className="muted">{t('panel.fallback')}</p>
               </div>
             }
           >
             <MolecularStructureCanvas molecule={molecule} />
           </SceneBoundary>
         </div>
-        <p className="mol-panel__hint muted">
-          合成示例分子 · 球棍模型为示意布局，非真实构象
-        </p>
+        <p className="mol-panel__hint muted">{t('panel.hint')}</p>
       </div>
 
       <div className="mol-panel__score">
-        <span className="mol-panel__score-label">类药潜力</span>
-        <div className="score-bar" role="img" aria-label={`类药潜力 ${(molecule.score * 100).toFixed(0)}%`}>
+        <span className="mol-panel__score-label">{t('panel.score')}</span>
+        <div
+          className="score-bar"
+          role="img"
+          aria-label={t('panel.scoreAria', { pct: (molecule.score * 100).toFixed(0) })}
+        >
           <span
             className="score-bar__fill"
             style={{ width: `${molecule.score * 100}%`, background: CLASS_COLORS[cls] }}
@@ -132,10 +145,10 @@ export function MoleculePanel({ molecule, onClose, saved = false, onToggleSave, 
       </div>
 
       <div className="mol-panel__badges">
-        {isExploration && <span className="badge badge--generated">生成式采样</span>}
-        <span className={`badge badge--${cls}`}>{CLASS_LABELS[cls]}</span>
+        {isExploration && <span className="badge badge--generated">{t('panel.generated')}</span>}
+        <span className={`badge badge--${cls}`}>{t(CLASS_LABEL_KEYS[cls])}</span>
         {molecule.lipinskiViolations.length === 0 ? (
-          <span className="badge badge--clean">Lipinski 全通过 ✓</span>
+          <span className="badge badge--clean">{t('panel.lipinskiClean')}</span>
         ) : (
           molecule.lipinskiViolations.map((v) => (
             <span key={v} className="badge badge--violation">
@@ -146,7 +159,7 @@ export function MoleculePanel({ molecule, onClose, saved = false, onToggleSave, 
       </div>
 
       <div className="mol-panel__radar">
-        <svg viewBox="0 0 160 150" role="img" aria-label="性质雷达图">
+        <svg viewBox="0 0 160 150" role="img" aria-label={t('panel.radarAria')}>
           <g transform="translate(80, 78)">
             {[0.33, 0.66, 1].map((ring) => (
               <polygon
@@ -184,7 +197,7 @@ export function MoleculePanel({ molecule, onClose, saved = false, onToggleSave, 
                   textAnchor="middle"
                   dominantBaseline="middle"
                 >
-                  {axis.label}
+                  {t(axis.label)}
                 </text>
               )
             })}
@@ -194,21 +207,21 @@ export function MoleculePanel({ molecule, onClose, saved = false, onToggleSave, 
 
       <dl className="mol-panel__props">
         <div>
-          <dt>分子量</dt>
+          <dt>{t('panel.prop.mw')}</dt>
           <dd className="mono">{molecule.props.mw.toFixed(1)} Da</dd>
         </div>
         <div>
-          <dt>logP（估计）</dt>
+          <dt>{t('panel.prop.logP')}</dt>
           <dd className="mono">{molecule.props.logP.toFixed(1)}</dd>
         </div>
         <div>
-          <dt>氢键供体/受体</dt>
+          <dt>{t('panel.prop.hb')}</dt>
           <dd className="mono">
             {molecule.props.hbd} / {molecule.props.hba}
           </dd>
         </div>
         <div>
-          <dt>环系</dt>
+          <dt>{t('panel.prop.rings')}</dt>
           <dd className="mono">{molecule.props.rings}</dd>
         </div>
       </dl>
@@ -223,9 +236,7 @@ export function MoleculePanel({ molecule, onClose, saved = false, onToggleSave, 
         ))}
       </ul>
 
-      <p className="mol-panel__disclaimer muted">
-        本分子由固定种子确定性生成，性质为教学近似估计，不代表任何真实化合物。
-      </p>
+      <p className="mol-panel__disclaimer muted">{t('panel.disclaimer')}</p>
     </aside>
   )
 }
@@ -237,9 +248,10 @@ export function UniverseLegend({
   activeClass?: string | null
   onSelectClass?: (cls: ClassKey) => void
 }) {
+  const { t } = useI18n()
   const stats = useMemo(() => universeStats(), [])
   return (
-    <div className="legend" aria-label="星等图例">
+    <div className="legend" aria-label={t('legend.aria')}>
       {(['goldilocks', 'candidate', 'lead', 'far'] as const).map((cls) => (
         <button
           key={cls}
@@ -247,17 +259,23 @@ export function UniverseLegend({
           className={`legend__item ${activeClass === cls ? 'legend__item--active' : ''}`}
           onClick={onSelectClass ? () => onSelectClass(cls) : undefined}
           aria-pressed={activeClass === cls}
-          title={onSelectClass ? (activeClass === cls ? '取消高亮' : `只高亮${CLASS_LABELS[cls]}`) : undefined}
+          title={
+            onSelectClass
+              ? activeClass === cls
+                ? t('legend.clear')
+                : t('legend.only', { label: t(CLASS_LABEL_KEYS[cls]) })
+              : undefined
+          }
         >
           <span className="legend__dot" style={{ background: CLASS_COLORS[cls] }} />
-          <span className="legend__label">{CLASS_LABELS[cls]}</span>
+          <span className="legend__label">{t(CLASS_LABEL_KEYS[cls])}</span>
           <span className="mono legend__count">{stats.byClass[cls]}</span>
         </button>
       ))}
-      <p className="legend__hint muted">双击空白处返回全景 · 所有星辰都可点击查看分子</p>
+      <p className="legend__hint muted">{t('legend.hint')}</p>
       <p className="legend__hint legend__hint--generated muted">
         <span className="legend__dot" style={{ background: '#b389ff' }} aria-hidden="true" />
-        紫色 = 生成式探索采样的候选
+        {t('legend.generated')}
       </p>
     </div>
   )

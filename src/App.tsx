@@ -8,11 +8,14 @@ import { CosmosStats, FunnelSection, PipelineSection } from './components/Sectio
 import { Footer, LimitsSection, MethodSection } from './components/Sections2'
 import { Chrome } from './components/Sections2'
 import { findMoleculeById, spawnExplorationBatch, universe, type ExplorationStar, type MoleculeClass } from './lib/galaxy'
+import { I18nProvider, useI18n } from './lib/i18n'
+import { applyTheme, loadTheme, saveTheme, themeById, type ThemeId } from './lib/theme'
 import type { Molecule } from './lib/molecule'
 import { shareUrl, loadShortlist, resolveShortlist, saveShortlist, toggleShortlist } from './lib/shortlist'
 import { stepUniverse } from './lib/search'
 
-export default function App() {
+function CosmosApp() {
+  const { t } = useI18n()
   const [selected, setSelected] = useState<Molecule | null>(null)
   const [focus, setFocus] = useState<{ x: number; y: number; z: number } | null>(null)
   const [explorationStars, setExplorationStars] = useState<ExplorationStar[]>([])
@@ -20,6 +23,7 @@ export default function App() {
   const [entered, setEntered] = useState(false)
   const [activeClass, setActiveClass] = useState<MoleculeClass | null>(null)
   const [saved, setSaved] = useState<string[]>(() => loadShortlist())
+  const [themeId, setThemeId] = useState<ThemeId>(() => loadTheme())
   const [toast, setToast] = useState<string | null>(null)
   const cosmosRef = useRef<HTMLElement | null>(null)
 
@@ -28,6 +32,13 @@ export default function App() {
     () => resolveShortlist(saved, (id) => findMoleculeById(id)),
     [saved],
   )
+  const sceneBg = themeById(themeId).sceneBg
+
+  // Paint the palette before first contentful paint of the themed surfaces.
+  useEffect(() => {
+    applyTheme(themeId)
+    saveTheme(themeId)
+  }, [themeId])
 
   // Deep link support: ?star=MCX-000123 flies to a molecule on first paint.
   useEffect(() => {
@@ -117,15 +128,18 @@ export default function App() {
     setSaved((prev) => toggleShortlist(prev, id))
   }, [])
 
-  const copyShareLink = useCallback(async (molecule: Molecule) => {
-    const url = shareUrl(molecule.id, window.location.href)
-    try {
-      await navigator.clipboard.writeText(url)
-      setToast(`已复制 ${molecule.id} 的链接`)
-    } catch {
-      setToast(url)
-    }
-  }, [])
+  const copyShareLink = useCallback(
+    async (molecule: Molecule) => {
+      const url = shareUrl(molecule.id, window.location.href)
+      try {
+        await navigator.clipboard.writeText(url)
+        setToast(t('toast.copied', { id: molecule.id }))
+      } catch {
+        setToast(url)
+      }
+    },
+    [t],
+  )
 
   const scrollToTop = useCallback(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -135,15 +149,13 @@ export default function App() {
 
   return (
     <div className="app">
-      <Chrome onEnter={scrollToTop} />
+      <Chrome onEnter={scrollToTop} themeId={themeId} onTheme={setThemeId} />
       <Hero onStart={enterCosmos} onExplore={triggerExploration} />
       <section className="cosmos" id="cosmos" ref={cosmosRef as React.RefObject<HTMLElement>}>
         <div className="cosmos__head">
-          <p className="section__eyebrow mono">主展览</p>
-          <h2 className="section__title">分子宇宙</h2>
-          <p className="cosmos__hint muted">
-            点击任意星辰查看分子 · ← → 键逐个漫游 · 双击空白返回全景 · 紫色新星是「生成式探索」刚采样的候选
-          </p>
+          <p className="section__eyebrow mono">{t('cosmos.eyebrow')}</p>
+          <h2 className="section__title">{t('cosmos.title')}</h2>
+          <p className="cosmos__hint muted">{t('cosmos.hint')}</p>
         </div>
         <div className={`cosmos__stage ${entered ? '' : 'cosmos__stage--dim'}`}>
           <CosmosScene
@@ -152,6 +164,7 @@ export default function App() {
             focus={focus}
             selected={selected}
             activeClass={activeClass}
+            sceneBg={sceneBg}
           />
           <CosmosControls
             generated={explorationStars}
@@ -177,7 +190,7 @@ export default function App() {
           />
           <button type="button" className="explore-btn" onClick={triggerExploration}>
             <span className="explore-btn__pulse" aria-hidden="true" />
-            触发生成式探索
+            {t('cosmos.explore')}
           </button>
           {toast && <div className="toast mono">{toast}</div>}
         </div>
@@ -189,5 +202,13 @@ export default function App() {
       <LimitsSection />
       <Footer />
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <I18nProvider>
+      <CosmosApp />
+    </I18nProvider>
   )
 }

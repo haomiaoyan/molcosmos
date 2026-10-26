@@ -33,12 +33,29 @@ export const CLASS_COLORS: Record<MoleculeClass, string> = {
   far: '#5a6788',
 }
 
+/** Chinese labels. Kept for tests and for search matching; the UI reads i18n. */
 export const CLASS_LABELS: Record<MoleculeClass, string> = {
   goldilocks: '宜居带分子',
   candidate: '候选分子',
   lead: '先导分子',
   far: '偏远分子',
 }
+
+/** English labels, also searchable so an English visitor can type "lead". */
+export const CLASS_LABELS_EN: Record<MoleculeClass, string> = {
+  goldilocks: 'Goldilocks',
+  candidate: 'Candidate',
+  lead: 'Lead',
+  far: 'Outlier',
+}
+
+/** i18n keys for the same labels, used by every component that renders them. */
+export const CLASS_LABEL_KEYS = {
+  goldilocks: 'class.goldilocks',
+  candidate: 'class.candidate',
+  lead: 'class.lead',
+  far: 'class.far',
+} as const
 
 export const GALAXY_RADIUS = 64
 export const GALAXY_CORE = 7

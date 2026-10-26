@@ -5,12 +5,27 @@
   --bg-2: #0a0d1e;
   --panel: rgba(14, 18, 38, 0.72);
   --panel-solid: #10142a;
-  --line: rgba(122, 143, 205, 0.18);
-  --line-strong: rgba(122, 143, 205, 0.38);
+  /* Channel triplets first: the tinted surfaces below compose their own alpha
+     from these, so a theme only has to redefine the triplet. */
+  --accent-rgb: 255 212 126;
+  --accent-2-rgb: 55 226 200;
+  --accent-3-rgb: 179 137 255;
+  --accent-4-rgb: 110 168 254;
+  --line-rgb: 122 143 205;
+  --line: rgb(var(--line-rgb) / 0.18);
+  --line-strong: rgb(var(--line-rgb) / 0.38);
+  /* Opaque-ish scrims layered over the canvas; themes override them so no
+     panel keeps the previous palette's tint after a switch. */
+  --scrim: rgba(5, 6, 15, 0.72);
+  --scrim-soft: rgba(5, 6, 15, 0.55);
+  --scrim-solid: rgba(10, 13, 30, 0.92);
+  --scrim-panel: rgba(8, 10, 24, 0.96);
   --text: #e6ecff;
   --text-dim: #9aa7cc;
   --text-mute: #5f6c92;
   --accent: #ffd47e;
+  /* Text that sits on top of an accent-filled button. */
+  --on-accent: #150d04;
   --accent-2: #37e2c8;
   --accent-3: #b389ff;
   --accent-4: #6ea8fe;
@@ -19,7 +34,7 @@
   --radius-sm: 10px;
   --font-mono: 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
   --shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
-  --glow: 0 0 42px rgba(255, 212, 126, 0.22);
+  --glow: 0 0 42px rgb(var(--accent-rgb) / 0.22);
 }
 
 * {
@@ -33,8 +48,8 @@ html {
 body {
   margin: 0;
   background:
-    radial-gradient(1200px 700px at 80% -10%, rgba(179, 137, 255, 0.12), transparent 60%),
-    radial-gradient(1000px 600px at 10% 20%, rgba(55, 226, 200, 0.08), transparent 60%),
+    radial-gradient(1200px 700px at 80% -10%, rgb(var(--accent-3-rgb) / 0.12), transparent 60%),
+    radial-gradient(1000px 600px at 10% 20%, rgb(var(--accent-2-rgb) / 0.08), transparent 60%),
     var(--bg);
   color: var(--text);
   font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
@@ -61,7 +76,7 @@ body {
 
 .accent-text {
   color: var(--accent);
-  text-shadow: 0 0 24px rgba(255, 212, 126, 0.45);
+  text-shadow: 0 0 24px rgb(var(--accent-rgb) / 0.45);
 }
 
 /* ---------- progress + top nav ---------- */
@@ -72,7 +87,7 @@ body {
   left: 0;
   height: 3px;
   background: linear-gradient(90deg, var(--accent-4), var(--accent-3), var(--accent));
-  box-shadow: 0 0 12px rgba(255, 212, 126, 0.6);
+  box-shadow: 0 0 12px rgb(var(--accent-rgb) / 0.6);
   z-index: 60;
   transition: width 0.12s linear;
 }
@@ -86,13 +101,14 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 10px 28px;
-  background: rgba(5, 6, 15, 0.72);
+  background: var(--scrim);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--line);
   z-index: 50;
 }
 
 .topnav__brand {
+  flex: 0 0 auto;
   font-weight: 700;
   color: var(--accent);
   cursor: pointer;
@@ -105,6 +121,10 @@ body {
   list-style: none;
   margin: 0;
   padding: 0;
+  /* Let the link row shrink and scroll instead of pushing the tools off the
+     right edge on a narrow screen. */
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .topnav a {
@@ -119,12 +139,147 @@ body {
 
 .topnav a:hover {
   color: var(--text);
-  background: rgba(122, 143, 205, 0.12);
+  background: rgb(var(--line-rgb) / 0.12);
 }
 
 .topnav__item--active a {
   color: var(--accent);
-  background: rgba(255, 212, 126, 0.1);
+  background: rgb(var(--accent-rgb) / 0.1);
+}
+
+/* ---------- top-bar tools: palette, language, GitHub ---------- */
+
+.topnav__tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.palette {
+  position: relative;
+}
+
+.palette__toggle,
+.lang-toggle,
+.topnav__github {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--scrim-soft);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.palette__toggle:hover,
+.lang-toggle:hover,
+.topnav__github:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.palette__toggle--open {
+  color: var(--accent);
+  border-color: rgb(var(--accent-rgb) / 0.45);
+}
+
+.palette__swatch {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.palette__swatch i {
+  display: block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.palette__name {
+  max-width: 5.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 60;
+  width: 194px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border-radius: 14px;
+  border: 1px solid var(--line-strong);
+  background: var(--scrim-panel);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow);
+  animation: results-in 0.16s ease;
+}
+
+.palette__option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.84rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.palette__option:hover {
+  background: rgb(var(--line-rgb) / 0.14);
+  color: var(--text);
+}
+
+.palette__option--active {
+  color: var(--accent);
+}
+
+.palette__option-label {
+  flex: 1 1 auto;
+}
+
+.palette__check {
+  width: 12px;
+  font-size: 0.78rem;
+}
+
+.lang-toggle {
+  gap: 4px;
+  padding: 0 9px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+}
+
+.lang-toggle__on {
+  color: var(--accent);
+}
+
+.lang-toggle__sep {
+  opacity: 0.4;
+}
+
+.topnav__github {
+  width: 32px;
+  padding: 0;
+  justify-content: center;
 }
 
 /* ---------- hero ---------- */
@@ -142,9 +297,9 @@ body {
   position: absolute;
   inset: -20%;
   background:
-    radial-gradient(700px 420px at 72% 38%, rgba(179, 137, 255, 0.22), transparent 65%),
-    radial-gradient(560px 380px at 24% 64%, rgba(55, 226, 200, 0.14), transparent 65%),
-    radial-gradient(900px 500px at 50% 120%, rgba(255, 212, 126, 0.12), transparent 60%);
+    radial-gradient(700px 420px at 72% 38%, rgb(var(--accent-3-rgb) / 0.22), transparent 65%),
+    radial-gradient(560px 380px at 24% 64%, rgb(var(--accent-2-rgb) / 0.14), transparent 65%),
+    radial-gradient(900px 500px at 50% 120%, rgb(var(--accent-rgb) / 0.12), transparent 60%);
   pointer-events: none;
   animation: hero-drift 14s ease-in-out infinite alternate;
 }
@@ -155,10 +310,10 @@ body {
   background-image:
     radial-gradient(1.6px 1.6px at 12% 22%, rgba(230, 236, 255, 0.9), transparent),
     radial-gradient(1.2px 1.2px at 78% 12%, rgba(230, 236, 255, 0.7), transparent),
-    radial-gradient(1.8px 1.8px at 55% 70%, rgba(255, 212, 126, 0.8), transparent),
-    radial-gradient(1.2px 1.2px at 30% 80%, rgba(110, 168, 254, 0.8), transparent),
+    radial-gradient(1.8px 1.8px at 55% 70%, rgb(var(--accent-rgb) / 0.8), transparent),
+    radial-gradient(1.2px 1.2px at 30% 80%, rgb(var(--accent-4-rgb) / 0.8), transparent),
     radial-gradient(1.5px 1.5px at 90% 55%, rgba(230, 236, 255, 0.6), transparent),
-    radial-gradient(1.1px 1.1px at 42% 34%, rgba(179, 137, 255, 0.7), transparent),
+    radial-gradient(1.1px 1.1px at 42% 34%, rgb(var(--accent-3-rgb) / 0.7), transparent),
     radial-gradient(1.4px 1.4px at 66% 88%, rgba(230, 236, 255, 0.7), transparent),
     radial-gradient(1.2px 1.2px at 8% 58%, rgba(230, 236, 255, 0.5), transparent);
   animation: hero-twinkle 5s ease-in-out infinite alternate;
@@ -190,7 +345,7 @@ body {
   border-radius: 999px;
   color: var(--text-dim);
   font-size: 0.85rem;
-  background: rgba(14, 18, 38, 0.5);
+  background: var(--panel);
   backdrop-filter: blur(8px);
 }
 
@@ -252,22 +407,22 @@ body {
 }
 
 .btn--primary {
-  background: linear-gradient(120deg, rgba(255, 212, 126, 0.9), rgba(179, 137, 255, 0.85));
+  background: linear-gradient(120deg, rgb(var(--accent-rgb) / 0.9), rgb(var(--accent-3-rgb) / 0.85));
   border-color: transparent;
-  color: #150d04;
+  color: var(--on-accent);
   font-weight: 700;
-  box-shadow: 0 10px 34px rgba(255, 212, 126, 0.3);
+  box-shadow: 0 10px 34px rgb(var(--accent-rgb) / 0.3);
 }
 
 .btn--primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 16px 44px rgba(255, 212, 126, 0.42);
+  box-shadow: 0 16px 44px rgb(var(--accent-rgb) / 0.42);
 }
 
 .btn--ghost:hover {
   transform: translateY(-2px);
   border-color: var(--accent-3);
-  background: rgba(179, 137, 255, 0.08);
+  background: rgb(var(--accent-3-rgb) / 0.08);
 }
 
 .btn--lg {
@@ -373,7 +528,7 @@ body {
   border-radius: var(--radius);
   border: 1px solid var(--line-strong);
   overflow: hidden;
-  background: #05060f;
+  background: var(--bg);
   box-shadow: var(--shadow);
 }
 
@@ -404,7 +559,7 @@ body {
   padding: 7px 14px;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: rgba(5, 6, 15, 0.72);
+  background: var(--scrim);
   backdrop-filter: blur(10px);
   color: var(--text-dim);
   cursor: pointer;
@@ -464,8 +619,8 @@ body {
   align-items: center;
   gap: 10px;
   border-radius: 999px;
-  border: 1px solid rgba(179, 137, 255, 0.55);
-  background: rgba(179, 137, 255, 0.16);
+  border: 1px solid rgb(var(--accent-3-rgb) / 0.55);
+  background: rgb(var(--accent-3-rgb) / 0.16);
   backdrop-filter: blur(10px);
   color: #e9ddff;
   padding: 12px 24px;
@@ -476,8 +631,8 @@ body {
 
 .explore-btn:hover {
   transform: translateY(-2px);
-  background: rgba(179, 137, 255, 0.24);
-  box-shadow: 0 12px 34px rgba(179, 137, 255, 0.35);
+  background: rgb(var(--accent-3-rgb) / 0.24);
+  box-shadow: 0 12px 34px rgb(var(--accent-3-rgb) / 0.35);
 }
 
 .explore-btn__pulse {
@@ -485,14 +640,14 @@ body {
   height: 10px;
   border-radius: 50%;
   background: var(--accent-3);
-  box-shadow: 0 0 0 0 rgba(179, 137, 255, 0.7);
+  box-shadow: 0 0 0 0 rgb(var(--accent-3-rgb) / 0.7);
   animation: pulse-ring 2s infinite;
 }
 
 @keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 rgba(179, 137, 255, 0.6); }
-  70% { box-shadow: 0 0 0 14px rgba(179, 137, 255, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(179, 137, 255, 0); }
+  0% { box-shadow: 0 0 0 0 rgb(var(--accent-3-rgb) / 0.6); }
+  70% { box-shadow: 0 0 0 14px rgb(var(--accent-3-rgb) / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(var(--accent-3-rgb) / 0); }
 }
 
 /* ---------- selected star marker ---------- */
@@ -501,7 +656,7 @@ body {
   padding: 3px 10px;
   border-radius: 999px;
   border: 1px solid currentColor;
-  background: rgba(5, 6, 15, 0.82);
+  background: var(--scrim-solid);
   backdrop-filter: blur(6px);
   font-family: var(--font-mono);
   font-size: 0.72rem;
@@ -528,7 +683,7 @@ body {
   overflow-y: auto;
   border-radius: var(--radius);
   border: 1px solid var(--line-strong);
-  background: rgba(10, 13, 30, 0.86);
+  background: var(--scrim-solid);
   backdrop-filter: blur(16px);
   padding: 18px 20px;
   box-shadow: var(--shadow);
@@ -551,11 +706,11 @@ body {
 
 .mol-panel::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: rgba(110, 168, 254, 0.35);
+  background: rgb(var(--accent-4-rgb) / 0.35);
 }
 
 .mol-panel::-webkit-scrollbar-thumb:hover {
-  background: rgba(110, 168, 254, 0.55);
+  background: rgb(var(--accent-4-rgb) / 0.55);
 }
 
 @keyframes panel-in {
@@ -609,13 +764,13 @@ body {
 .mol-panel__action:hover {
   color: var(--text);
   border-color: var(--line-strong);
-  background: rgba(110, 168, 254, 0.12);
+  background: rgb(var(--accent-4-rgb) / 0.12);
 }
 
 .mol-panel__action--on {
   color: var(--accent);
-  border-color: rgba(255, 212, 126, 0.55);
-  background: rgba(255, 212, 126, 0.1);
+  border-color: rgb(var(--accent-rgb) / 0.55);
+  background: rgb(var(--accent-rgb) / 0.1);
 }
 
 .mol-panel__close {
@@ -639,7 +794,7 @@ body {
   height: 210px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--line);
-  background: radial-gradient(240px 160px at 50% 40%, rgba(110, 168, 254, 0.1), transparent), #070a18;
+  background: radial-gradient(240px 160px at 50% 40%, rgb(var(--accent-4-rgb) / 0.1), transparent), var(--panel-solid);
   margin: 10px 0;
   overflow: hidden;
 }
@@ -683,6 +838,10 @@ body {
   text-align: center;
   background: linear-gradient(to top, rgba(7, 10, 24, 0.92), transparent);
   pointer-events: none;
+  /* One line only: a wrapped hint grows upward over the 3D model. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mol-panel__score {
@@ -706,7 +865,7 @@ body {
 .score-bar {
   height: 8px;
   border-radius: 999px;
-  background: rgba(122, 143, 205, 0.15);
+  background: rgb(var(--line-rgb) / 0.15);
   overflow: hidden;
 }
 
@@ -734,19 +893,19 @@ body {
 
 .badge--goldilocks {
   color: var(--accent);
-  border-color: rgba(255, 212, 126, 0.5);
-  background: rgba(255, 212, 126, 0.1);
+  border-color: rgb(var(--accent-rgb) / 0.5);
+  background: rgb(var(--accent-rgb) / 0.1);
 }
 
 .badge--candidate {
   color: var(--accent-2);
-  border-color: rgba(55, 226, 200, 0.5);
-  background: rgba(55, 226, 200, 0.08);
+  border-color: rgb(var(--accent-2-rgb) / 0.5);
+  background: rgb(var(--accent-2-rgb) / 0.08);
 }
 
 .badge--lead {
   color: var(--accent-4);
-  border-color: rgba(110, 168, 254, 0.5);
+  border-color: rgb(var(--accent-4-rgb) / 0.5);
 }
 
 .badge--far {
@@ -755,7 +914,7 @@ body {
 
 .badge--clean {
   color: var(--accent-2);
-  border-color: rgba(55, 226, 200, 0.45);
+  border-color: rgb(var(--accent-2-rgb) / 0.45);
 }
 
 .badge--violation {
@@ -767,8 +926,8 @@ body {
 /* Marks a molecule that exists only because the visitor ran an exploration. */
 .badge--generated {
   color: var(--accent-3);
-  border-color: rgba(179, 137, 255, 0.5);
-  background: rgba(179, 137, 255, 0.1);
+  border-color: rgb(var(--accent-3-rgb) / 0.5);
+  background: rgb(var(--accent-3-rgb) / 0.1);
 }
 
 .mol-panel__radar {
@@ -786,15 +945,15 @@ body {
 
 .radar__ring {
   fill: none;
-  stroke: rgba(122, 143, 205, 0.18);
+  stroke: rgb(var(--line-rgb) / 0.18);
 }
 
 .radar__spoke {
-  stroke: rgba(122, 143, 205, 0.22);
+  stroke: rgb(var(--line-rgb) / 0.22);
 }
 
 .radar__value {
-  fill: rgba(255, 212, 126, 0.22);
+  fill: rgb(var(--accent-rgb) / 0.22);
   stroke: var(--accent);
   stroke-width: 1.6;
 }
@@ -945,7 +1104,7 @@ body {
   width: 1px;
   height: 18px;
   margin: 0 auto;
-  background: linear-gradient(to bottom, rgba(110, 168, 254, 0.5), rgba(110, 168, 254, 0.08));
+  background: linear-gradient(to bottom, rgb(var(--accent-4-rgb) / 0.5), rgb(var(--accent-4-rgb) / 0.08));
   position: relative;
 }
 
@@ -956,8 +1115,8 @@ body {
   bottom: 0;
   width: 7px;
   height: 7px;
-  border-right: 1px solid rgba(110, 168, 254, 0.6);
-  border-bottom: 1px solid rgba(110, 168, 254, 0.6);
+  border-right: 1px solid rgb(var(--accent-4-rgb) / 0.6);
+  border-bottom: 1px solid rgb(var(--accent-4-rgb) / 0.6);
   transform: translate(-50%, 2px) rotate(45deg);
 }
 
@@ -968,7 +1127,7 @@ body {
   padding: 16px 24px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--line-strong);
-  background: linear-gradient(120deg, rgba(110, 168, 254, 0.16), rgba(179, 137, 255, 0.12));
+  background: linear-gradient(120deg, rgb(var(--accent-4-rgb) / 0.16), rgb(var(--accent-3-rgb) / 0.12));
   backdrop-filter: blur(8px);
   min-width: 0;
 }
@@ -1151,6 +1310,11 @@ body {
   color: var(--danger);
 }
 
+/* Chinese needs no space after the full stop; English does. */
+html[lang='en'] .limits-list strong {
+  margin-right: 0.4em;
+}
+
 /* ---------- footer ---------- */
 
 .footer {
@@ -1164,6 +1328,33 @@ body {
 
 .footer p {
   margin: 4px 0;
+}
+
+.footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px !important;
+  font-size: 0.8rem;
+}
+
+.footer__links a {
+  color: var(--text-mute);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.footer__links a:hover {
+  color: var(--accent);
+  border-color: rgb(var(--accent-rgb) / 0.4);
+}
+
+.footer__sep {
+  color: var(--text-mute);
+  opacity: 0.5;
 }
 
 /* ---------- search + shortlist + toast ---------- */
@@ -1185,15 +1376,15 @@ body {
   padding: 6px 8px 6px 12px;
   border-radius: 999px;
   border: 1px solid var(--line-strong);
-  background: rgba(5, 6, 15, 0.78);
+  background: var(--scrim);
   backdrop-filter: blur(12px);
   transition: border-color 0.18s, box-shadow 0.18s;
 }
 
 .cosmos-search--open .cosmos-search__field,
 .cosmos-search__field:focus-within {
-  border-color: rgba(110, 168, 254, 0.65);
-  box-shadow: 0 0 0 3px rgba(110, 168, 254, 0.12);
+  border-color: rgb(var(--accent-4-rgb) / 0.65);
+  box-shadow: 0 0 0 3px rgb(var(--accent-4-rgb) / 0.12);
 }
 
 .cosmos-search__icon {
@@ -1254,7 +1445,7 @@ body {
   list-style: none;
   border-radius: 12px;
   border: 1px solid var(--line-strong);
-  background: rgba(8, 10, 24, 0.96);
+  background: var(--scrim-panel);
   backdrop-filter: blur(16px);
   box-shadow: var(--shadow);
   max-height: 264px;
@@ -1284,7 +1475,7 @@ body {
 }
 
 .cosmos-results__item--active {
-  background: rgba(110, 168, 254, 0.16);
+  background: rgb(var(--accent-4-rgb) / 0.16);
 }
 
 .cosmos-results__dot {
@@ -1334,7 +1525,7 @@ body {
   padding: 7px 14px;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: rgba(5, 6, 15, 0.72);
+  background: var(--scrim);
   backdrop-filter: blur(10px);
   color: var(--text-dim);
   font: inherit;
@@ -1346,7 +1537,7 @@ body {
 .shortlist__toggle:hover,
 .shortlist--open .shortlist__toggle {
   color: var(--accent);
-  border-color: rgba(255, 212, 126, 0.5);
+  border-color: rgb(var(--accent-rgb) / 0.5);
 }
 
 .shortlist__count {
@@ -1362,7 +1553,7 @@ body {
   padding: 10px;
   border-radius: 12px;
   border: 1px solid var(--line-strong);
-  background: rgba(8, 10, 24, 0.96);
+  background: var(--scrim-panel);
   backdrop-filter: blur(16px);
   box-shadow: var(--shadow);
   animation: results-in 0.14s ease;
@@ -1408,7 +1599,7 @@ body {
 }
 
 .shortlist__open:hover {
-  background: rgba(110, 168, 254, 0.14);
+  background: rgb(var(--accent-4-rgb) / 0.14);
 }
 
 .shortlist__dot {
@@ -1478,7 +1669,7 @@ body {
   padding: 8px 16px;
   border-radius: 999px;
   border: 1px solid var(--line-strong);
-  background: rgba(8, 10, 24, 0.95);
+  background: var(--scrim-panel);
   backdrop-filter: blur(12px);
   color: var(--text);
   font-size: 0.78rem;
@@ -1541,7 +1732,7 @@ body {
     padding: 14px 16px;
     /* Near-opaque: over the bright galaxy core a translucent panel picks up a
        large blurred halo from backdrop-filter. */
-    background: rgba(8, 10, 24, 0.96);
+    background: var(--scrim-panel);
   }
 
   .mol-panel__title {
@@ -1608,5 +1799,54 @@ body {
 
   .toast {
     bottom: 56px;
+  }
+
+  /* Top bar: the palette keeps its dots but drops the theme name, and the
+     nav collapses to a scrollable row so the tools never fall off-screen. */
+  .topnav {
+    gap: 8px;
+  }
+
+  .topnav__tools {
+    gap: 4px;
+    flex: 0 0 auto;
+  }
+
+  .palette__name {
+    display: none;
+  }
+
+  .palette__toggle,
+  .lang-toggle,
+  .topnav__github {
+    height: 30px;
+    padding: 0 9px;
+  }
+
+  .topnav__github {
+    width: 30px;
+    padding: 0;
+  }
+
+  .palette__menu {
+    right: -34px;
+  }
+
+  /* At 390px the brand + tools already fill the bar, so the section links wrap
+     to a second row rather than being squeezed to their first letters. */
+  .topnav {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .topnav ul {
+    order: 3;
+    flex-basis: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .topnav ul::-webkit-scrollbar {
+    display: none;
   }
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { CLASS_COLORS, CLASS_LABELS } from '../lib/galaxy'
+import { CLASS_COLORS, CLASS_LABEL_KEYS } from '../lib/galaxy'
+import { useI18n } from '../lib/i18n'
 import { SHORTLIST_LIMIT } from '../lib/shortlist'
 import type { Molecule } from '../lib/molecule'
 
@@ -16,6 +17,7 @@ interface Props {
  * so it survives a reload.
  */
 export function Shortlist({ molecules, onSelect, onRemove, onClear }: Props) {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
 
@@ -42,10 +44,10 @@ export function Shortlist({ molecules, onSelect, onRemove, onClear }: Props) {
         className="shortlist__toggle"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        title="我收藏的分子"
+        title={t('short.title')}
       >
         <span aria-hidden="true">★</span>
-        短名单
+        {t('short.label')}
         <span className="mono shortlist__count">
           {molecules.length}/{SHORTLIST_LIMIT}
         </span>
@@ -54,9 +56,7 @@ export function Shortlist({ molecules, onSelect, onRemove, onClear }: Props) {
       {open && (
         <div className="shortlist__body">
           {molecules.length === 0 ? (
-            <p className="shortlist__empty muted">
-              在分子详情里点 ☆ 收藏，方便回头对比。收藏保存在本机，刷新不会丢。
-            </p>
+            <p className="shortlist__empty muted">{t('short.empty')}</p>
           ) : (
             <>
               <ul className="shortlist__list">
@@ -69,7 +69,7 @@ export function Shortlist({ molecules, onSelect, onRemove, onClear }: Props) {
                         onSelect(m)
                         setOpen(false)
                       }}
-                      title={`查看 ${m.id}`}
+                      title={t('short.view', { id: m.id })}
                     >
                       <span
                         className="shortlist__dot"
@@ -80,14 +80,14 @@ export function Shortlist({ molecules, onSelect, onRemove, onClear }: Props) {
                       <span className="shortlist__score mono" style={{ color: CLASS_COLORS[m.drugClass] }}>
                         {(m.score * 100).toFixed(0)}
                       </span>
-                      <span className="shortlist__class muted">{CLASS_LABELS[m.drugClass]}</span>
+                      <span className="shortlist__class muted">{t(CLASS_LABEL_KEYS[m.drugClass])}</span>
                     </button>
                     <button
                       type="button"
                       className="shortlist__remove"
                       onClick={() => onRemove(m.id)}
-                      aria-label={`从短名单移除 ${m.id}`}
-                      title="移出短名单"
+                      aria-label={t('short.remove', { id: m.id })}
+                      title={t('short.removeTitle')}
                     >
                       ✕
                     </button>
@@ -95,7 +95,7 @@ export function Shortlist({ molecules, onSelect, onRemove, onClear }: Props) {
                 ))}
               </ul>
               <button type="button" className="shortlist__clear" onClick={onClear}>
-                清空短名单
+                {t('short.clear')}
               </button>
             </>
           )}

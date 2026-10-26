@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CLASS_COLORS, CLASS_LABELS, type ExplorationStar } from '../lib/galaxy'
+import { CLASS_COLORS, CLASS_LABEL_KEYS, type ExplorationStar } from '../lib/galaxy'
+import { useI18n } from '../lib/i18n'
 import { formulaOf, searchMolecules, type SearchHit } from '../lib/search'
 import type { Molecule } from '../lib/molecule'
 
@@ -15,6 +16,7 @@ interface Props {
  * opens, Escape clears, and clicking outside closes it.
  */
 export function CosmosControls({ generated, onSelect, onRandom }: Props) {
+  const { t } = useI18n()
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const [cursor, setCursor] = useState(0)
@@ -77,8 +79,8 @@ export function CosmosControls({ generated, onSelect, onRandom }: Props) {
           className="cosmos-search__input"
           type="search"
           value={query}
-          placeholder="搜索编号 / 分子式 / 类别"
-          aria-label="搜索分子"
+          placeholder={t('search.placeholder')}
+          aria-label={t('search.aria')}
           role="combobox"
           aria-expanded={listOpen}
           aria-controls="cosmos-search-results"
@@ -95,15 +97,15 @@ export function CosmosControls({ generated, onSelect, onRandom }: Props) {
           type="button"
           className="cosmos-search__dice"
           onClick={onRandom}
-          title="随机漫游到一个分子"
-          aria-label="随机漫游"
+          title={t('search.diceTitle')}
+          aria-label={t('search.diceAria')}
         >
           ⤮
         </button>
       </div>
 
       {listOpen && (
-        <ul className="cosmos-results" id="cosmos-search-results" role="listbox" aria-label="搜索结果">
+        <ul className="cosmos-results" id="cosmos-search-results" role="listbox" aria-label={t('search.results')}>
           {hits.map((hit, i) => (
             <li key={hit.molecule.id} role="option" aria-selected={i === cursor}>
               <button
@@ -119,9 +121,13 @@ export function CosmosControls({ generated, onSelect, onRandom }: Props) {
                 />
                 <span className="cosmos-results__id mono">{hit.molecule.id}</span>
                 <span className="cosmos-results__formula mono">{formulaOf(hit.molecule)}</span>
-                <span className="cosmos-results__class muted">{CLASS_LABELS[hit.molecule.drugClass]}</span>
+                <span className="cosmos-results__class muted">{t(CLASS_LABEL_KEYS[hit.molecule.drugClass])}</span>
                 <span className="cosmos-results__why muted">
-                  {hit.reason === 'id' ? '编号' : hit.reason === 'formula' ? '分子式' : '类别'}
+                  {hit.reason === 'id'
+                    ? t('search.why.id')
+                    : hit.reason === 'formula'
+                      ? t('search.why.formula')
+                      : t('search.why.class')}
                 </span>
               </button>
             </li>

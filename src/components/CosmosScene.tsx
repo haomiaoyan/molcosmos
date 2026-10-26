@@ -565,9 +565,18 @@ interface CosmosSceneProps {
   focus?: { x: number; y: number; z: number } | null
   selected?: Molecule | null
   activeClass?: MoleculeClass | null
+  /** Backdrop of the canvas; follows the active theme. */
+  sceneBg?: string
 }
 
-export function CosmosScene({ onPick, explorationStars, focus, selected, activeClass }: CosmosSceneProps) {
+export function CosmosScene({
+  onPick,
+  explorationStars,
+  focus,
+  selected,
+  activeClass,
+  sceneBg = '#05060f',
+}: CosmosSceneProps) {
   const controlsRef = useRef<any>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const fly = useRef({
@@ -628,8 +637,8 @@ export function CosmosScene({ onPick, explorationStars, focus, selected, activeC
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: true }}
       >
-        <color attach="background" args={['#05060f']} />
-        <fog attach="fog" args={['#05060f', 120, 320]} />
+        <color attach="background" args={[sceneBg]} />
+        <fog attach="fog" args={[sceneBg, 120, 320]} />
         <ambientLight intensity={0.55} />
         <pointLight position={[0, 30, 0]} intensity={1.4} color="#aab8ff" distance={200} />
         <StarField

@@ -8,7 +8,7 @@
  * Kept free of React and of the scene so it can be tested directly.
  */
 
-import { CLASS_LABELS, universe } from './galaxy'
+import { CLASS_LABELS, CLASS_LABELS_EN, universe } from './galaxy'
 import { estimateHydrogens, molecularFormula, type Molecule } from './molecule'
 
 export type HitReason = 'id' | 'formula' | 'class'
@@ -66,7 +66,10 @@ export function searchMolecules(query: string, extra: Molecule[] = [], limit = 8
       scored.push({ hit: { molecule, reason: 'formula' }, rank: 5 })
       continue
     }
-    if (CLASS_LABELS[molecule.drugClass].includes(raw)) {
+    // Both label sets match, so an English visitor can type "lead".
+    const zhLabel = CLASS_LABELS[molecule.drugClass]
+    const enLabel = CLASS_LABELS_EN[molecule.drugClass]
+    if (zhLabel.includes(raw) || enLabel.toLowerCase().includes(q)) {
       scored.push({ hit: { molecule, reason: 'class' }, rank: 6 })
     }
   }
