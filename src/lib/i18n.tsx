@@ -69,8 +69,8 @@ const S = {
   'hero.cta2': ['触发一次生成式探索', 'Run a generative exploration'],
   'hero.f1.title': ['一片星系，一次讲清', 'One galaxy, one explanation'],
   'hero.f1.body': [
-    '约 10⁶⁰ 个类药分子构成的化学空间，画成一片三臂旋涡星系。每颗星都由固定种子确定性生成。',
-    'The chemical space of roughly 10⁶⁰ drug-like molecules, drawn as a three-armed spiral galaxy. Every star is generated deterministically from a fixed seed.',
+    '约 10⁶⁰ 个可能的小分子（含 ≤30 个 C/N/O/S 原子）构成的化学空间，画成一片三臂旋涡星系。每颗星都由固定种子确定性生成。',
+    'The chemical space of roughly 10⁶⁰ possible small molecules (up to 30 C/N/O/S atoms), drawn as a three-armed spiral galaxy. Every star is generated deterministically from a fixed seed.',
   ],
   'hero.f2.title': ['亮度即类药潜力', 'Brightness is drug-likeness'],
   'hero.f2.body': [
@@ -190,8 +190,8 @@ const S = {
   'pipeline.s1.ai': ['辅助', 'Assistant'],
   'pipeline.s2.title': ['虚拟筛选', 'Virtual screening'],
   'pipeline.s2.body': [
-    '在数百万个化合物库里搜索能结合靶点的分子。这是暴力枚举：化学空间有约 10⁶⁰ 个类药分子，能筛的不到一亿分之一。',
-    'Search libraries of millions of compounds for molecules that bind the target. This is brute force: the space holds about 10⁶⁰ drug-like molecules, and even a huge screen touches less than one part in a hundred million.',
+    '在数百万个化合物库里搜索能结合靶点的分子。这是暴力枚举：化学空间有约 10⁶⁰ 个可能的小分子，能筛的不到一亿分之一。',
+    'Search libraries of millions of compounds for molecules that bind the target. This is brute force: the space holds about 10⁶⁰ possible small molecules, and even a huge screen touches less than one part in a hundred million.',
   ],
   'pipeline.s2.ai': ['主力', 'Workhorse'],
   'pipeline.s3.title': ['分子生成', 'Molecule generation'],
@@ -320,20 +320,20 @@ const S = {
     'MolCosmos · Molecular Universe — Introduction to Medical AI course project. Front-end only, no tracking, no real pharmaceutical data.',
   ],
   'footer.line2': [
-    '参考文献：Boháček et al. 1996（10⁶⁰ 估计）；Lipinski et al. 1997（Rule of Five）；PhRMA 药物研发漏斗示意口径。',
-    'References: Boháček et al. 1996 (the 10⁶⁰ estimate); Lipinski et al. 1997 (Rule of Five); PhRMA’s classic drug-discovery funnel for the illustrative figures.',
+    '参考文献：Boháček et al. 1996（≤30 个 C/N/O/S 原子的分子数估计）；Lipinski et al. 1997（Rule of Five）；PhRMA 药物研发漏斗示意口径。',
+    'References: Boháček et al. 1996 (the estimate for molecules with up to 30 C/N/O/S atoms); Lipinski et al. 1997 (Rule of Five); PhRMA’s classic drug-discovery funnel for the illustrative figures.',
   ],
   'footer.source': ['源码', 'Source'],
   'footer.author': ['作者 GitHub', 'GitHub'],
 
   /* ---------- citations ---------- */
   'cite.chemicalSpace': [
-    'Boháček R. et al., “The art and practice of structure-based drug design: a molecular modeling perspective”, Med. Res. Rev., 1996（10⁶⁰ 量级估计的常见出处）',
-    'Boháček R. et al., “The art and practice of structure-based drug design: a molecular modeling perspective”, Med. Res. Rev., 1996 (the usual source for the 10⁶⁰ order-of-magnitude estimate)',
+    'Boháček R. S., McMartin C., Guida W. C., “The art and practice of structure-based drug design: a molecular modeling perspective”, Med. Res. Rev., 1996, 16(1): 3–50（估计含 ≤30 个 C/N/O/S 原子的可能分子超过 10⁶⁰ 个）',
+    'Boháček R. S., McMartin C., Guida W. C., “The art and practice of structure-based drug design: a molecular modeling perspective”, Med. Res. Rev., 1996, 16(1): 3–50 (estimates more than 10⁶⁰ possible molecules with up to 30 C/N/O/S atoms)',
   ],
   'cite.lipinski': [
-    'Lipinski C. A. et al., “Experimental and computational approaches to estimate solubility and permeability in drug discovery”, Adv. Drug Deliv. Rev., 1997, 23(1): 3–25',
-    'Lipinski C. A. et al., “Experimental and computational approaches to estimate solubility and permeability in drug discovery”, Adv. Drug Deliv. Rev., 1997, 23(1): 3–25',
+    'Lipinski C. A. et al., “Experimental and computational approaches to estimate solubility and permeability in drug discovery”, Adv. Drug Deliv. Rev., 1997, 23(1–3): 3–25',
+    'Lipinski C. A. et al., “Experimental and computational approaches to estimate solubility and permeability in drug discovery”, Adv. Drug Deliv. Rev., 1997, 23(1–3): 3–25',
   ],
   'cite.funnel': [
     '药物研发漏斗各层数字为行业常引示意口径（如 PhRMA 绘制的经典图表：约 5,000–10,000 个筛选化合物 → 约 250 个进入临床前 → 约 5 个进入临床试验 → 1 个获批），课程演示用途，非任何单一企业的真实数据',

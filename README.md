@@ -20,7 +20,7 @@
 
 传统讲 AI 制药，容易停留在"AI 能设计药物"这句口号上。这个项目想把那个**被搜索的空间本身**画出来：
 
-- 可药化学空间约有 **10⁶⁰** 个候选分子（Boháček et al., 1996 的经典估计）——宇宙里的星星，就是这个空间的一个采样
+- 化学空间约有 **10⁶⁰** 个可能的小分子（Boháček et al., 1996 估计：含 ≤30 个 C/N/O/S 原子的分子）——宇宙里的星星，就是这个空间的一个采样
 - 每颗星的位置由分子的**亲脂性 / 分子量 / 极性表面积**决定，颜色由 **Lipinski 类药五规则**的打分决定
 - 星系中央的金色光环是**"宜居带"**——口服药最可能活下来的性质区间
 - 点开任意一颗星，能看到它的 3D 球棍结构、五维性质雷达图、以及逐条对照的 Lipinski 规则
@@ -56,7 +56,7 @@
 - 全部 600 个分子由**确定性伪随机算法**在浏览器本地生成（固定种子，可复现）
 - 分子量、logP、HBD/HBA 由原子组成按简化模型推导，**不是**真实化合物的实测值
 - Lipinski 五规则是真实的教学规则（Lipinski et al., *Adv Drug Deliv Rev* 1997, 23(1):3–25）
-- 10⁶⁰ 化学空间估计来自 Boháček et al., 1996
+- 10⁶⁰ 化学空间估计来自 Boháček, McMartin & Guida, *Med Res Rev* 1996, 16(1):3–50 —— 注意原文口径是「**≤30 个 C/N/O/S 原子的可能分子**」，不是「类药分子（<500 Da）」
 - 研发漏斗数字为行业常引的示意口径（PhRMA 图表口径），**非精确统计**
 - 3D 分子结构是随机树 + 弹簧松弛生成的**视觉化布局**，不是真实的构象计算
 
@@ -166,8 +166,8 @@ src/
 
 ## 📚 参考
 
-- Boháček, R. S., et al. (1996). *The art and practice of structure-based drug design: a molecular modeling perspective.* Med Res Rev.
-- Lipinski, C. A., et al. (1997). *Experimental and computational approaches to estimate solubility and permeability in drug discovery and development settings.* Adv Drug Deliv Rev, 23(1), 3–25.
+- Boháček, R. S., McMartin, C., & Guida, W. C. (1996). *The art and practice of structure-based drug design: a molecular modeling perspective.* Med Res Rev, 16(1), 3–50. — 10⁶⁰ 的口径是「≤30 个 C/N/O/S 原子的可能分子」，见该文图表注释。
+- Lipinski, C. A., et al. (1997). *Experimental and computational approaches to estimate solubility and permeability in drug discovery and development settings.* Adv Drug Deliv Rev, 23(1–3), 3–25. — 注意 PubMed 索引的是 2001 年重印版（46(1–3):3–26），不是本篇。
 
 ---
 
