@@ -90,6 +90,27 @@ export function Footer() {
   )
 }
 
+/**
+ * Every section the top nav can point at, in page order.
+ *
+ * The nav renders from this list *and* the scroll spy measures against it, so
+ * adding a section can never again leave the highlight stuck on a neighbour —
+ * which is exactly what happened when `links` and the spy's private array drifted
+ * apart. `#cosmos` is deliberately absent: the galaxy has no nav entry of its own,
+ * so the home item stays lit while the reader is down there.
+ */
+const NAV_SECTIONS = [
+  ['top', 'nav.home'],
+  ['pipeline', 'nav.pipeline'],
+  ['funnel', 'nav.funnel'],
+  ['stats', 'nav.stats'],
+  ['compare', 'nav.compare'],
+  ['lab', 'nav.lab'],
+  ['timeline', 'nav.timeline'],
+  ['method', 'nav.method'],
+  ['limits', 'nav.limits'],
+] as const
+
 /** Small scroll-progress bar + nav, pure decoration for the "冗余 UI" requirement. */
 export function Chrome({ onEnter, themeId, onTheme }: { onEnter: () => void; themeId: ThemeId; onTheme: (id: ThemeId) => void }) {
   const { t } = useI18n()
@@ -100,9 +121,8 @@ export function Chrome({ onEnter, themeId, onTheme }: { onEnter: () => void; the
     const onScroll = () => {
       const total = document.documentElement.scrollHeight - window.innerHeight
       setProgress(total > 0 ? Math.min(1, window.scrollY / total) : 0)
-      const sections = ['top', 'pipeline', 'funnel', 'stats', 'method', 'limits']
       let current = 'top'
-      for (const id of sections) {
+      for (const [id] of NAV_SECTIONS) {
         const el = document.getElementById(id)
         if (el && el.getBoundingClientRect().top < window.innerHeight * 0.4) current = id
       }
@@ -113,18 +133,6 @@ export function Chrome({ onEnter, themeId, onTheme }: { onEnter: () => void; the
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const links = [
-    ['top', 'nav.home'],
-    ['pipeline', 'nav.pipeline'],
-    ['funnel', 'nav.funnel'],
-    ['stats', 'nav.stats'],
-    ['compare', 'nav.compare'],
-    ['lab', 'nav.lab'],
-    ['timeline', 'nav.timeline'],
-    ['method', 'nav.method'],
-    ['limits', 'nav.limits'],
-  ] as const
-
   return (
     <>
       <div className="progress-bar" aria-hidden="true" style={{ width: `${progress * 100}%` }} />
@@ -133,7 +141,7 @@ export function Chrome({ onEnter, themeId, onTheme }: { onEnter: () => void; the
           MolCosmos
         </span>
         <ul>
-          {links.map(([id, key]) => (
+          {NAV_SECTIONS.map(([id, key]) => (
             <li key={id} className={active === id ? 'topnav__item--active' : ''}>
               <a href={`#${id}`}>{t(key)}</a>
             </li>

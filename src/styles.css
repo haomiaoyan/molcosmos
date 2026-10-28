@@ -343,10 +343,26 @@ body {
   /* Anchored to the top of `.hero__inner` so it lines up with the title block
      regardless of how tall the feature grid below grows. */
   top: 58px;
-  left: calc(50% - 600px);
+  /* Sits in the 136px gutter beside the title. The old value (`-600px`) pushed
+     the left edge 34px past `.hero` and `overflow: hidden` ate the molecule's
+     leftmost atoms, so this is `-600px` shifted right by 40px: the slot now
+     starts 6px inside the hero column, clear of the title's first glyph. */
+  left: calc(50% - 560px);
   width: 240px;
   height: 240px;
   pointer-events: auto;
+}
+
+/* Between 1101 and 1227px `.app` is still shrinking, so the gutter next to the
+   title narrows and a fixed +40px would not be enough. Shrink the box and push
+   it further right; at 1150px this lands the slot at 48..256 with the title's
+   first glyph at 278, and at 1105px at 25..233 with the glyph at 261. */
+@media (min-width: 1101px) and (max-width: 1227px) {
+  .hero__molecule-slot {
+    left: calc(50% - 520px);
+    width: 208px;
+    height: 208px;
+  }
 }
 
 .hero__molecule {
