@@ -121,12 +121,23 @@ export function Chrome({ onEnter, themeId, onTheme }: { onEnter: () => void; the
     const onScroll = () => {
       const total = document.documentElement.scrollHeight - window.innerHeight
       setProgress(total > 0 ? Math.min(1, window.scrollY / total) : 0)
-      let current = 'top'
+      // Highlight whatever sits under a probe line, rather than "the last section
+// whose top has merely crossed it". The old test let a short section lose to its
+// neighbour before the reader had finished with it: at a 900px viewport anything
+// under 720px tall could never hold the highlight, so compare, stats and method
+// all jumped ahead one item.
+      const probe = window.innerHeight * 0.35
+      let under = ''
+      let lastStarted = 'top'
       for (const [id] of NAV_SECTIONS) {
         const el = document.getElementById(id)
-        if (el && el.getBoundingClientRect().top < window.innerHeight * 0.4) current = id
+        if (!el) continue
+        const rect = el.getBoundingClientRect()
+        if (rect.top > probe) continue
+        lastStarted = id
+        if (rect.bottom > probe) under = id
       }
-      setActive(current)
+      setActive(under || lastStarted)
     }
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
