@@ -336,6 +336,82 @@ body {
   text-align: center;
 }
 
+/* ---------- hero molecule (2D canvas, no third WebGL context) ---------- */
+
+.hero__molecule-slot {
+  position: absolute;
+  /* Anchored to the top of `.hero__inner` so it lines up with the title block
+     regardless of how tall the feature grid below grows. */
+  top: 58px;
+  left: calc(50% - 600px);
+  width: 240px;
+  height: 240px;
+  pointer-events: auto;
+}
+
+.hero__molecule {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  cursor: default;
+  /* A faint well so the structure sits in space rather than on the page. */
+  background: radial-gradient(circle at 50% 50%, rgb(var(--accent-3-rgb) / 0.1), transparent 68%);
+}
+
+.hero__molecule::after {
+  content: '';
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  border: 1px solid rgb(var(--line-rgb) / 0.28);
+  pointer-events: none;
+}
+
+.hero__molecule-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hero__molecule-label {
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  color: var(--text-mute);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+@media (max-width: 1100px) {
+  .hero__molecule-slot {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 6px;
+  }
+
+  .hero__molecule-label {
+    bottom: -14px;
+    font-size: 0.6rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero__molecule-slot {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 14px;
+  }
+}
+
 .hero__eyebrow {
   display: inline-flex;
   align-items: center;

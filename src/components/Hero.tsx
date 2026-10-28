@@ -1,5 +1,6 @@
 import { APP_NAME } from '../config'
 import { useI18n } from '../lib/i18n'
+import { HeroMolecule } from './HeroMolecule'
 
 interface Props {
   onStart: () => void
@@ -20,6 +21,9 @@ export function Hero({ onStart, onExplore }: Props) {
       <div className="hero__glow" aria-hidden="true" />
       <div className="hero__stars" aria-hidden="true" />
       <div className="hero__inner">
+        <div className="hero__molecule-slot">
+          <HeroMolecule />
+        </div>
         <p className="hero__eyebrow">
           <span className="dot" aria-hidden="true" /> {APP_NAME} · {t('app.course')} · {t('hero.eyebrow')}
         </p>
