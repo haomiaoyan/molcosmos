@@ -11,6 +11,7 @@ import {
   type MoleculeClass,
 } from '../lib/galaxy'
 import { ELEMENT_COLORS, layoutStructure, type Molecule } from '../lib/molecule'
+import { useReducedMotion } from '../lib/motion'
 import { nearestOnScreen, toNdc } from '../lib/pick'
 
 /* ------------------------------------------------------------------ */
@@ -112,7 +113,12 @@ function StarField({
     return { expGeometry, expHaloGeometry }
   }, [explorationStars])
 
+  const reduced = useReducedMotion()
+
+  // Freezing uTime leaves every star at its own static twinkle offset, so the
+  // field still reads as varied instead of flattening to one brightness.
   useFrame(({ clock }) => {
+    if (reduced) return
     if (pointsRef.current) {
       const material = pointsRef.current.material as THREE.ShaderMaterial
       material.uniforms.uTime.value = clock.getElapsedTime()
@@ -253,7 +259,10 @@ function SelectedStarMarker({ molecule }: { molecule: Molecule }) {
     return tex
   }, [])
 
+  const reduced = useReducedMotion()
+
   useFrame(({ clock }) => {
+    if (reduced) return
     const t = clock.getElapsedTime()
     // Two rings expanding outward on a 2s cycle, like a sonar ping.
     if (ringRef.current) {
@@ -300,7 +309,9 @@ function SelectedStarMarker({ molecule }: { molecule: Molecule }) {
         />
       </mesh>
 
-      <mesh ref={ringRef} renderOrder={6}>
+      {/* Under reduced motion the expanding pings are removed and only the
+          steady ring stays: same "this is the one" signal, no motion. */}
+      <mesh ref={ringRef} renderOrder={6} visible={!reduced}>
         <ringGeometry args={[0.95, 1.06, 64]} />
         <meshBasicMaterial
           color={color}
@@ -313,7 +324,7 @@ function SelectedStarMarker({ molecule }: { molecule: Molecule }) {
         />
       </mesh>
 
-      <mesh ref={ring2Ref} renderOrder={6}>
+      <mesh ref={ring2Ref} renderOrder={6} visible={!reduced}>
         <ringGeometry args={[0.95, 1.06, 64]} />
         <meshBasicMaterial
           color={color}
@@ -344,7 +355,9 @@ function SelectedStarMarker({ molecule }: { molecule: Molecule }) {
 /** The "宜居带" ring — where the teaching score believes oral drugs live. */
 function GoldilocksRing() {
   const ref = useRef<THREE.Mesh>(null)
+  const reduced = useReducedMotion()
   useFrame(({ clock }) => {
+    if (reduced) return
     if (ref.current) {
       ref.current.rotation.z = clock.getElapsedTime() * 0.05
       const material = ref.current.material as THREE.MeshBasicMaterial
@@ -417,6 +430,7 @@ function makeStarMaterial(variant: 'core' | 'halo', tint?: string) {
 
 function DustLayer({ count = 900 }: { count?: number }) {
   const ref = useRef<THREE.Points>(null)
+  const reduced = useReducedMotion()
   const geometry = useMemo(() => {
     const positions = new Float32Array(count * 3)
     for (let i = 0; i < count; i++) {
@@ -433,6 +447,7 @@ function DustLayer({ count = 900 }: { count?: number }) {
   }, [count])
 
   useFrame(({ clock }) => {
+    if (reduced) return
     if (ref.current) ref.current.rotation.y = clock.getElapsedTime() * 0.008
   })
 
@@ -463,9 +478,10 @@ export function MolecularStructure3D({
 }) {
   const groupRef = useRef<THREE.Group>(null)
   const { atoms, bonds } = useMemo(() => layoutStructure(molecule), [molecule])
+  const reduced = useReducedMotion()
 
   useFrame((_, delta) => {
-    if (groupRef.current && autoRotate) {
+    if (groupRef.current && autoRotate && !reduced) {
       groupRef.current.rotation.y += delta * 0.45
     }
   })
@@ -683,11 +699,14 @@ function FlyRig({
   controls: React.MutableRefObject<any>
   fly: React.MutableRefObject<{ active: boolean; pos: THREE.Vector3; look: THREE.Vector3 }>
 }) {
+  const reduced = useReducedMotion()
   useFrame(({ camera }, delta) => {
     const c = controls.current
-    if (c) c.autoRotate = !fly.current.active
+    if (c) c.autoRotate = !fly.current.active && !reduced
     if (!fly.current.active) return
-    const k = 1 - Math.exp(-4 * delta)
+    // A camera swoop is the classic motion-sickness trigger, so with reduced
+    // motion the flight becomes a cut: same destination, no travel.
+    const k = reduced ? 1 : 1 - Math.exp(-4 * delta)
     camera.position.lerp(fly.current.pos, k)
     if (c) {
       c.target.lerp(fly.current.look, k)

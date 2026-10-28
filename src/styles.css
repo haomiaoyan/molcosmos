@@ -2608,3 +2608,65 @@ html[lang='en'] .limits-list strong {
     display: none;
   }
 }
+/* ---------- reduced motion -------------------------------------------
+   The site is decorative by design, which is exactly the kind of motion
+   that triggers nausea and dizziness for people with vestibular disorders.
+   The platform already lets them opt out, so we honour it.
+
+   The rule is "motion may stop, information may not": every pulse, drift,
+   twinkle and growth here becomes a still frame, but nothing that carries
+   meaning is removed — a pulsing dot becomes a steady dot, and the hero
+   molecule still shows its structure, just without turning.
+   -------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    scroll-behavior: auto;
+  }
+
+  /* Infinite decorative loops: stop them where they look best rather than
+     leaving them at frame zero, which can mean invisible. */
+  .hero__glow {
+    animation: none;
+    transform: none;
+  }
+
+  .hero__stars {
+    animation: none;
+    opacity: 0.85;
+  }
+
+  .hero__eyebrow .dot {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .explore-btn__pulse {
+    animation: none;
+    box-shadow: 0 0 0 4px rgb(var(--accent-3-rgb) / 0.35);
+  }
+
+  /* One-shot entrances become instant appearance instead of movement. */
+  .mol-panel,
+  .mol-panel--closing,
+  .star-tag,
+  .toast,
+  .cosmos-results {
+    animation: none !important;
+  }
+
+  /* Transitions that shift or scale an element; colour and border
+     transitions stay so hover feedback still reads as feedback. */
+  .btn,
+  .class-card,
+  .station,
+  .feature,
+  .topnav a,
+  .shortlist__row,
+  .lab__preset,
+  .compare__chip,
+  .timeline__card {
+    transition-property: color, background-color, border-color, box-shadow, opacity;
+  }
+}
