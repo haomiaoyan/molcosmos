@@ -1843,6 +1843,156 @@ body {
   }
 }
 
+/* ---------- timeline (#timeline) ---------- */
+
+.timeline {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: 860px;
+  position: relative;
+}
+
+.timeline__item {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 0 18px;
+  position: relative;
+  padding-bottom: 18px;
+}
+
+.timeline__item:last-child {
+  padding-bottom: 0;
+}
+
+.timeline__rail {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+/* The connecting line is drawn by the rail, not by the card, so cards of
+   different heights still join cleanly. */
+.timeline__rail::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  bottom: -18px;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--accent-rgb) / 0.45),
+    var(--line-strong)
+  );
+}
+
+.timeline__item:last-child .timeline__rail::before {
+  display: none;
+}
+
+.timeline__dot {
+  position: relative;
+  width: 11px;
+  height: 11px;
+  margin-top: 17px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgb(var(--accent-rgb) / 0.12);
+}
+
+.timeline__item--foundation .timeline__dot {
+  background: var(--accent-2);
+  box-shadow: 0 0 0 4px rgb(var(--accent-2-rgb) / 0.12);
+}
+
+.timeline__card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 16px 20px 18px;
+  transition: border-color 0.25s ease, transform 0.25s ease;
+}
+
+.timeline__card:hover {
+  border-color: rgb(var(--accent-rgb) / 0.4);
+  transform: translateX(3px);
+}
+
+.timeline__year {
+  margin: 0 0 6px;
+  font-size: 0.76rem;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+}
+
+.timeline__item--foundation .timeline__year {
+  color: var(--accent-2);
+}
+
+.timeline__title {
+  margin: 0 0 8px;
+  font-size: 1.02rem;
+  font-weight: 700;
+}
+
+.timeline__body {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.72;
+  color: var(--text-dim);
+  text-wrap: pretty;
+}
+
+.timeline__disclaimer {
+  max-width: 860px;
+  margin: 26px auto 0;
+  padding: 16px 20px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--scrim-soft);
+}
+
+.timeline__disclaimer-title {
+  margin: 0 0 8px;
+  font-size: 0.74rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-3);
+}
+
+.timeline__disclaimer-body {
+  margin: 0;
+  font-size: 0.83rem;
+  line-height: 1.7;
+  color: var(--text-mute);
+  text-wrap: pretty;
+}
+
+@media (max-width: 640px) {
+  .timeline__item {
+    grid-template-columns: 24px minmax(0, 1fr);
+    gap: 0 12px;
+  }
+
+  .timeline__dot {
+    width: 9px;
+    height: 9px;
+    margin-top: 16px;
+  }
+
+  .timeline__card {
+    padding: 14px 16px 16px;
+  }
+
+  .timeline__body {
+    font-size: 0.84rem;
+  }
+
+  .timeline__disclaimer {
+    padding: 14px 16px;
+  }
+}
+
 /* ---------- method & limits ---------- */
 
 .method-grid {

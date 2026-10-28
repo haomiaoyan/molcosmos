@@ -120,6 +120,7 @@ export function Chrome({ onEnter, themeId, onTheme }: { onEnter: () => void; the
     ['stats', 'nav.stats'],
     ['compare', 'nav.compare'],
     ['lab', 'nav.lab'],
+    ['timeline', 'nav.timeline'],
     ['method', 'nav.method'],
     ['limits', 'nav.limits'],
   ] as const

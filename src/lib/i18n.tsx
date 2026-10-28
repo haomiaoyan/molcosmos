@@ -40,6 +40,7 @@ const S = {
   'nav.stats': ['普查', 'Census'],
   'nav.compare': ['对比', 'Compare'],
   'nav.lab': ['沙盒', 'Sandbox'],
+  'nav.timeline': ['时间轴', 'Timeline'],
   'nav.method': ['方法', 'Method'],
   'nav.limits': ['边界', 'Limits'],
   'nav.label': ['页面导航', 'Page navigation'],
