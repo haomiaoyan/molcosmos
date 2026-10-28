@@ -4,18 +4,30 @@ import { Hero } from './components/Hero'
 import { MoleculePanel, UniverseLegend } from './components/MoleculePanel'
 import { CosmosControls } from './components/CosmosControls'
 import { Shortlist } from './components/Shortlist'
+import { LabSection } from './components/LabSection'
+import { CompareSection } from './components/CompareSection'
+import { TimelineSection } from './components/TimelineSection'
 import { CosmosStats, FunnelSection, PipelineSection } from './components/Sections'
 import { Footer, LimitsSection, MethodSection } from './components/Sections2'
 import { Chrome } from './components/Sections2'
-import { findMoleculeById, spawnExplorationBatch, universe, type ExplorationStar, type MoleculeClass } from './lib/galaxy'
+import {
+  findMoleculeById,
+  rescoreMolecules,
+  rescoreUniverse,
+  spawnExplorationBatch,
+  type ExplorationStar,
+  type MoleculeClass,
+} from './lib/galaxy'
 import { I18nProvider, useI18n } from './lib/i18n'
 import { applyTheme, loadTheme, saveTheme, themeById, type ThemeId } from './lib/theme'
 import type { Molecule } from './lib/molecule'
 import { shareUrl, loadShortlist, resolveShortlist, saveShortlist, toggleShortlist } from './lib/shortlist'
 import { stepUniverse } from './lib/search'
+import { EMPTY_URL_STATE, readUrlState, writeUrlState, type UrlState } from './lib/urlState'
+import { DEFAULT_WEIGHTS, isDefaultWeights, type Weights } from './lib/weights'
 
-function CosmosApp() {
-  const { t } = useI18n()
+function CosmosApp({ initialUrl }: { initialUrl: UrlState }) {
+  const { t, lang } = useI18n()
   const [selected, setSelected] = useState<Molecule | null>(null)
   const [focus, setFocus] = useState<{ x: number; y: number; z: number } | null>(null)
   const [explorationStars, setExplorationStars] = useState<ExplorationStar[]>([])
@@ -23,11 +35,17 @@ function CosmosApp() {
   const [entered, setEntered] = useState(false)
   const [activeClass, setActiveClass] = useState<MoleculeClass | null>(null)
   const [saved, setSaved] = useState<string[]>(() => loadShortlist())
-  const [themeId, setThemeId] = useState<ThemeId>(() => loadTheme())
+  const [themeId, setThemeId] = useState<ThemeId>(() => initialUrl.theme ?? loadTheme())
+  const [weights, setWeights] = useState<Weights>(DEFAULT_WEIGHTS)
   const [toast, setToast] = useState<string | null>(null)
   const cosmosRef = useRef<HTMLElement | null>(null)
 
-  const catalogue = useMemo(() => universe(), [])
+  // The catalogue re-scores under the sandbox weights; positions never move.
+  const catalogue = useMemo(() => rescoreUniverse(weights), [weights])
+  const scoredExploration = useMemo(
+    () => rescoreMolecules(explorationStars, weights),
+    [explorationStars, weights],
+  )
   const shortlist = useMemo(
     () => resolveShortlist(saved, (id) => findMoleculeById(id)),
     [saved],
@@ -42,28 +60,29 @@ function CosmosApp() {
 
   // Deep link support: ?star=MCX-000123 flies to a molecule on first paint.
   useEffect(() => {
-    const requested = new URLSearchParams(window.location.search).get('star')
-    if (!requested) return
-    const m = findMoleculeById(requested)
+    if (!initialUrl.star) return
+    const m = findMoleculeById(initialUrl.star)
     if (m) {
       setSelected(m)
       setFocus({ x: m.x, y: m.y, z: m.z })
       setEntered(true)
     }
-  }, [])
+  }, [initialUrl.star])
 
   useEffect(() => {
     saveShortlist(saved)
   }, [saved])
 
-  // Keep the address bar in step with the open molecule, so copying the URL
-  // from the browser shares the same deep link the 分享 button produces.
+  // Keep the address bar in step with the view, so copying the URL from the
+  // browser shares the same molecule, palette and language the visitor sees.
   useEffect(() => {
-    const url = new URL(window.location.href)
-    if (selected) url.searchParams.set('star', selected.id)
-    else url.searchParams.delete('star')
-    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
-  }, [selected])
+    const search = writeUrlState(window.location.search, {
+      star: selected?.id ?? null,
+      theme: themeId,
+      lang,
+    })
+    window.history.replaceState(null, '', `${window.location.pathname}${search}${window.location.hash}`)
+  }, [selected, themeId, lang])
 
   useEffect(() => {
     if (!toast) return
@@ -159,15 +178,16 @@ function CosmosApp() {
         </div>
         <div className={`cosmos__stage ${entered ? '' : 'cosmos__stage--dim'}`}>
           <CosmosScene
+            molecules={catalogue}
             onPick={handlePick}
-            explorationStars={explorationStars}
+            explorationStars={scoredExploration}
             focus={focus}
             selected={selected}
             activeClass={activeClass}
             sceneBg={sceneBg}
           />
           <CosmosControls
-            generated={explorationStars}
+            generated={scoredExploration}
             onSelect={revealMolecule}
             onRandom={randomMolecule}
           />
@@ -187,6 +207,7 @@ function CosmosApp() {
             saved={savedSelected}
             onToggleSave={toggleSave}
             onShare={copyShareLink}
+            customWeights={!isDefaultWeights(weights)}
           />
           <button type="button" className="explore-btn" onClick={triggerExploration}>
             <span className="explore-btn__pulse" aria-hidden="true" />
@@ -198,6 +219,9 @@ function CosmosApp() {
       <PipelineSection />
       <FunnelSection />
       <CosmosStats />
+      <CompareSection molecules={shortlist} />
+      <LabSection weights={weights} onChange={setWeights} />
+      <TimelineSection />
       <MethodSection />
       <LimitsSection />
       <Footer />
@@ -206,9 +230,14 @@ function CosmosApp() {
 }
 
 export default function App() {
+  // Read the link once, before anything renders: both the provider and the
+  // cosmos need it, and re-reading on every render would fight the sync effect.
+  const [initialUrl] = useState(() =>
+    typeof window === 'undefined' ? EMPTY_URL_STATE : readUrlState(window.location.search),
+  )
   return (
-    <I18nProvider>
-      <CosmosApp />
+    <I18nProvider initialLang={initialUrl.lang ?? undefined}>
+      <CosmosApp initialUrl={initialUrl} />
     </I18nProvider>
   )
 }

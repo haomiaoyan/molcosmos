@@ -38,6 +38,9 @@ const S = {
   'nav.pipeline': ['流水线', 'Pipeline'],
   'nav.funnel': ['漏斗', 'Funnel'],
   'nav.stats': ['普查', 'Census'],
+  'nav.compare': ['对比', 'Compare'],
+  'nav.lab': ['沙盒', 'Sandbox'],
+  'nav.timeline': ['时间轴', 'Timeline'],
   'nav.method': ['方法', 'Method'],
   'nav.limits': ['边界', 'Limits'],
   'nav.label': ['页面导航', 'Page navigation'],
@@ -69,8 +72,8 @@ const S = {
   'hero.cta2': ['触发一次生成式探索', 'Run a generative exploration'],
   'hero.f1.title': ['一片星系，一次讲清', 'One galaxy, one explanation'],
   'hero.f1.body': [
-    '约 10⁶⁰ 个类药分子构成的化学空间，画成一片三臂旋涡星系。每颗星都由固定种子确定性生成。',
-    'The chemical space of roughly 10⁶⁰ drug-like molecules, drawn as a three-armed spiral galaxy. Every star is generated deterministically from a fixed seed.',
+    '约 10⁶⁰ 个可能的小分子（含 ≤30 个 C/N/O/S 原子）构成的化学空间，画成一片三臂旋涡星系。每颗星都由固定种子确定性生成。',
+    'The chemical space of roughly 10⁶⁰ possible small molecules (up to 30 C/N/O/S atoms), drawn as a three-armed spiral galaxy. Every star is generated deterministically from a fixed seed.',
   ],
   'hero.f2.title': ['亮度即类药潜力', 'Brightness is drug-likeness'],
   'hero.f2.body': [
@@ -190,8 +193,8 @@ const S = {
   'pipeline.s1.ai': ['辅助', 'Assistant'],
   'pipeline.s2.title': ['虚拟筛选', 'Virtual screening'],
   'pipeline.s2.body': [
-    '在数百万个化合物库里搜索能结合靶点的分子。这是暴力枚举：化学空间有约 10⁶⁰ 个类药分子，能筛的不到一亿分之一。',
-    'Search libraries of millions of compounds for molecules that bind the target. This is brute force: the space holds about 10⁶⁰ drug-like molecules, and even a huge screen touches less than one part in a hundred million.',
+    '在数百万个化合物库里搜索能结合靶点的分子。这是暴力枚举：化学空间有约 10⁶⁰ 个可能的小分子，能筛的不到一亿分之一。',
+    'Search libraries of millions of compounds for molecules that bind the target. This is brute force: the space holds about 10⁶⁰ possible small molecules, and even a huge screen touches less than one part in a hundred million.',
   ],
   'pipeline.s2.ai': ['主力', 'Workhorse'],
   'pipeline.s3.title': ['分子生成', 'Molecule generation'],
@@ -314,26 +317,137 @@ const S = {
     '“Run exploration” illustrates how a generative model samples; no real model runs on this page.',
   ],
 
+  /* ---------- weight sandbox (#lab) ---------- */
+  'lab.eyebrow': ['调参沙盒', 'Weight sandbox'],
+  'lab.title.pre': ['换个权重，', 'Change the weights, '],
+  'lab.title.accent': ['整片星系重排', 'and the galaxy re-sorts'],
+  'lab.lead': [
+    '分数是五个高斯的加权和。拖动滑块，看同一批分子在不同「什么算好药」的定义下如何升降——上面的星系会实时跟着变。',
+    'The score is a weighted sum of five Gaussians. Drag a slider and watch the same molecules rise or fall under a different definition of “a good drug” — the galaxy above follows in real time.',
+  ],
+  'lab.weights': ['权重', 'Weights'],
+  'lab.sum': ['原始和 {sum}% → 已归一化到 100%', 'Raw sum {sum}% → normalised to 100%'],
+  'lab.normalized': ['已归一化', 'Normalised'],
+  'lab.reset': ['恢复默认', 'Reset to default'],
+  'lab.preset': ['预设', 'Presets'],
+  'lab.preset.default': ['默认', 'Default'],
+  'lab.preset.weightOnly': ['只看分子量', 'Weight only'],
+  'lab.preset.lipophilicityOnly': ['只看亲脂性', 'Lipophilicity only'],
+  'lab.custom': ['自定义权重', 'Custom weights'],
+  'lab.term.mw': ['分子量', 'Molecular weight'],
+  'lab.term.logP': ['亲脂性 logP', 'Lipophilicity (logP)'],
+  'lab.term.hbd': ['氢键供体', 'H-bond donors'],
+  'lab.term.hba': ['氢键受体', 'H-bond acceptors'],
+  'lab.term.rings': ['环系数', 'Ring count'],
+  'lab.ideal': ['理想 {ideal} ± {width}', 'Ideal {ideal} ± {width}'],
+  'lab.distribution': ['当前权重下的四类人口', 'Class population under these weights'],
+  'lab.best': ['当前最高分', 'Current top score'],
+  'lab.mean': ['平均分', 'Mean score'],
+  'lab.delta': ['相对默认：{delta}', 'vs. default: {delta}'],
+  'lab.deltaNone': ['与默认一致', 'Identical to default'],
+  'lab.note': [
+    '注意：权重变了，分子的物理性质一点没变——变的只是「我们认为什么重要」。这正是打分函数里的价值判断。',
+    'Note: the molecules’ physical properties do not change at all — only what we decide to value. That value judgement is the whole point of a scoring function.',
+  ],
+  'lab.aria': ['调整打分权重', 'Adjust scoring weights'],
+
+  /* ---------- compare (#compare) ---------- */
+  'compare.eyebrow': ['并排对比', 'Side by side'],
+  'compare.title.pre': ['把候选分子', 'Put the candidates '],
+  'compare.title.accent': ['摆在一起看', 'next to each other'],
+  'compare.lead': [
+    '从短名单里勾选最多三颗分子，叠加它们的性质雷达图，逐行对比每一项指标。',
+    'Tick up to three molecules from your shortlist to overlay their property radar and compare every metric row by row.',
+  ],
+  'compare.empty': [
+    '短名单还是空的。回到星系点开任意一颗星，用「收藏」把它加进来。',
+    'Your shortlist is empty. Open any star in the galaxy and add it with “Save”.',
+  ],
+  'compare.needTwo': [
+    '再选一颗就能开始对比。',
+    'Pick one more to start comparing.',
+  ],
+  'compare.pick': ['选择分子', 'Choose molecules'],
+  'compare.limit': ['最多同时对比 3 颗', 'Up to 3 at a time'],
+  'compare.selected': ['已选 {count}/3', 'Selected {count}/3'],
+  'compare.radarAria': ['所选分子的性质雷达图叠加', 'Overlaid property radar for the selected molecules'],
+  'compare.table': ['性质对比', 'Property comparison'],
+  'compare.metric': ['指标', 'Metric'],
+  'compare.row.mw': ['分子量', 'Molecular weight'],
+  'compare.row.logP': ['logP', 'logP'],
+  'compare.row.hbd': ['氢键供体', 'H-bond donors'],
+  'compare.row.hba': ['氢键受体', 'H-bond acceptors'],
+  'compare.row.rings': ['环数', 'Rings'],
+  'compare.row.score': ['类药潜力', 'Drug-likeness'],
+  'compare.row.class': ['分类', 'Class'],
+  'compare.best': ['本行最优', 'Best in row'],
+  'compare.structures': ['结构并排', 'Structures side by side'],
+  'compare.clear': ['清空选择', 'Clear selection'],
+
+  /* ---------- timeline (#timeline) ---------- */
+  'timeline.eyebrow': ['里程碑', 'Milestones'],
+  'timeline.title.pre': ['三十年，', 'Thirty years, '],
+  'timeline.title.accent': ['从数得清到算得动', 'from countable to computable'],
+  'timeline.lead': [
+    'AI 制药不是突然出现的。它站在两个更早的成果上：先有人算清了化学空间有多大，再有人定下了「什么样的分子像药」。',
+    'AI drug discovery did not appear from nowhere. It stands on two earlier results: someone worked out how big the chemical space is, and someone defined what makes a molecule drug-like.',
+  ],
+  'timeline.1996.year': ['1996', '1996'],
+  'timeline.1996.title': ['化学空间有多大', 'How large is chemical space'],
+  'timeline.1996.body': [
+    'Boháček、McMartin 与 Guida 估计：由不超过 30 个 C/N/O/S 原子构成的可能分子超过 10⁶⁰ 个。这个数字后来被反复引用，也常被转述成「类药分子」。',
+    'Boháček, McMartin and Guida estimated that more than 10⁶⁰ possible molecules can be built from at most 30 C/N/O/S atoms. The number is quoted constantly — and often misquoted as “drug-like molecules”.',
+  ],
+  'timeline.1997.year': ['1997', '1997'],
+  'timeline.1997.title': ['类药五规则', 'The Rule of Five'],
+  'timeline.1997.body': [
+    'Lipinski 提出四条经验规则，用来在计算阶段就筛掉大概率不能口服吸收的分子。至今仍是每个化学信息学工具的默认起手式。',
+    'Lipinski set out four rules of thumb for filtering out molecules unlikely to be orally absorbed, before any assay is run. They are still the default first move in every cheminformatics toolkit.',
+  ],
+  'timeline.2020a.year': ['2020.01', 'Jan 2020'],
+  'timeline.2020a.title': ['第一颗 AI 设计的分子进临床', 'The first AI-designed molecule enters trials'],
+  'timeline.2020a.body': [
+    '住友大日本制药与 Exscientia 宣布 DSP-1181 在日本进入 I 期。12 个月从立项到临床前候选是当时的速度纪录。需要说明：「首个」是公司宣称，且该分子在 I 期后停止了开发。',
+    'Sumitomo Dainippon Pharma and Exscientia announced that DSP-1181 had entered Phase I in Japan — 12 months from project start to preclinical candidate. Two caveats: “first” is a company claim, and the compound was discontinued after Phase I.',
+  ],
+  'timeline.2020b.year': ['2020.11', 'Nov 2020'],
+  'timeline.2020b.title': ['AlphaFold2 改写结构预测', 'AlphaFold2 rewrites structure prediction'],
+  'timeline.2020b.body': [
+    'CASP14 结果于 2020 年 11 月 30 日公布，AlphaFold2 的预测精度接近实验方法。方法论文 2021 年发表于 Nature（596 卷，583–589 页）。',
+    'CASP14 results were released on 30 November 2020: AlphaFold2 came close to experimental accuracy. The method paper appeared in Nature in 2021 (vol. 596, pp. 583–589).',
+  ],
+  'timeline.2025.year': ['2025', '2025'],
+  'timeline.2025.title': ['AI 设计的药走到临床 II 期', 'An AI-designed drug reaches Phase II'],
+  'timeline.2025.body': [
+    'Insilico Medicine 的 rentosertib 用于特发性肺纤维化，随机 2a 期结果 2025 年发表于 Nature Medicine。这是目前走得最远的 AI 原研分子之一——但仍不是获批药物。',
+    'Insilico Medicine’s rentosertib, for idiopathic pulmonary fibrosis, reported randomised Phase 2a results in Nature Medicine in 2025 — one of the furthest-advanced AI-originated molecules, though still not an approved drug.',
+  ],
+  'timeline.disclaimer.title': ['关于这些说法', 'On these claims'],
+  'timeline.disclaimer.body': [
+    '「首个」是公司宣称而非公认；DSP-1181 的试验在日本开展，未在 ClinicalTrials.gov 注册。rentosertib 的 2a 期由 Insilico 申办，论文 11 位作者为该公司雇员。时间轴只陈述公开记录，不推断 AI 与成败之间的因果。',
+    '“First” is a company claim, not a consensus; DSP-1181’s trial ran in Japan and is not registered on ClinicalTrials.gov. Insilico sponsored the rentosertib Phase 2a, and 11 of the paper’s authors are company employees. The timeline states the public record only and infers no causal link between AI and either success or failure.',
+  ],
+
   /* ---------- footer ---------- */
   'footer.line1': [
     'MolCosmos · 分子宇宙 —— 医学人工智能导论课程项目。纯前端、无追踪、无真实医药数据。',
     'MolCosmos · Molecular Universe — Introduction to Medical AI course project. Front-end only, no tracking, no real pharmaceutical data.',
   ],
   'footer.line2': [
-    '参考文献：Boháček et al. 1996（10⁶⁰ 估计）；Lipinski et al. 1997（Rule of Five）；PhRMA 药物研发漏斗示意口径。',
-    'References: Boháček et al. 1996 (the 10⁶⁰ estimate); Lipinski et al. 1997 (Rule of Five); PhRMA’s classic drug-discovery funnel for the illustrative figures.',
+    '参考文献：Boháček et al. 1996（≤30 个 C/N/O/S 原子的分子数估计）；Lipinski et al. 1997（Rule of Five）；PhRMA 药物研发漏斗示意口径。',
+    'References: Boháček et al. 1996 (the estimate for molecules with up to 30 C/N/O/S atoms); Lipinski et al. 1997 (Rule of Five); PhRMA’s classic drug-discovery funnel for the illustrative figures.',
   ],
   'footer.source': ['源码', 'Source'],
   'footer.author': ['作者 GitHub', 'GitHub'],
 
   /* ---------- citations ---------- */
   'cite.chemicalSpace': [
-    'Boháček R. et al., “The art and practice of structure-based drug design: a molecular modeling perspective”, Med. Res. Rev., 1996（10⁶⁰ 量级估计的常见出处）',
-    'Boháček R. et al., “The art and practice of structure-based drug design: a molecular modeling perspective”, Med. Res. Rev., 1996 (the usual source for the 10⁶⁰ order-of-magnitude estimate)',
+    'Boháček R. S., McMartin C., Guida W. C., “The art and practice of structure-based drug design: a molecular modeling perspective”, Med. Res. Rev., 1996, 16(1): 3–50（估计含 ≤30 个 C/N/O/S 原子的可能分子超过 10⁶⁰ 个）',
+    'Boháček R. S., McMartin C., Guida W. C., “The art and practice of structure-based drug design: a molecular modeling perspective”, Med. Res. Rev., 1996, 16(1): 3–50 (estimates more than 10⁶⁰ possible molecules with up to 30 C/N/O/S atoms)',
   ],
   'cite.lipinski': [
-    'Lipinski C. A. et al., “Experimental and computational approaches to estimate solubility and permeability in drug discovery”, Adv. Drug Deliv. Rev., 1997, 23(1): 3–25',
-    'Lipinski C. A. et al., “Experimental and computational approaches to estimate solubility and permeability in drug discovery”, Adv. Drug Deliv. Rev., 1997, 23(1): 3–25',
+    'Lipinski C. A. et al., “Experimental and computational approaches to estimate solubility and permeability in drug discovery”, Adv. Drug Deliv. Rev., 1997, 23(1–3): 3–25',
+    'Lipinski C. A. et al., “Experimental and computational approaches to estimate solubility and permeability in drug discovery”, Adv. Drug Deliv. Rev., 1997, 23(1–3): 3–25',
   ],
   'cite.funnel': [
     '药物研发漏斗各层数字为行业常引示意口径（如 PhRMA 绘制的经典图表：约 5,000–10,000 个筛选化合物 → 约 250 个进入临床前 → 约 5 个进入临床试验 → 1 个获批），课程演示用途，非任何单一企业的真实数据',
@@ -395,8 +509,21 @@ const I18nContext = createContext<I18nValue>({
   t: (key, vars) => translate(key, 'zh', vars),
 })
 
-export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(() => loadLang())
+export function I18nProvider({
+  children,
+  initialLang,
+}: {
+  children: ReactNode
+  /** A language requested by link, which outranks the stored preference. */
+  initialLang?: Lang
+}) {
+  const [lang, setLangState] = useState<Lang>(() => initialLang ?? loadLang())
+
+  // A link that carries a language also makes it stick, the same way a link
+  // that carries a palette does.
+  useEffect(() => {
+    if (initialLang) saveLang(initialLang)
+  }, [initialLang])
 
   const setLang = useCallback((next: Lang) => {
     setLangState(next)
