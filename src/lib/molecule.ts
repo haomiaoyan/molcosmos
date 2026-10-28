@@ -11,6 +11,7 @@
  */
 
 import { hashString, makeRng, type Rng } from './rng'
+import { DEFAULT_WEIGHTS, scoreWithWeights, type Weights } from './weights'
 
 export const ATOM_MASS = { C: 12.011, N: 14.007, O: 15.999, S: 32.06 } as const
 export const ATOM_RADII = { C: 0.77, N: 0.75, O: 0.73, S: 1.02 } as const // van der Waals, Å
@@ -122,19 +123,13 @@ export function lipinskiViolations(props: MoleculeProps): string[] {
  * Teaching score: Gaussian closeness to the oral-drug "Goldilocks zone".
  * MW ≈ 350, logP ≈ 2.5, HBD ≈ 2, HBA ≈ 5, rings ≈ 3.
  * Deliberately transparent so students can recompute it by hand.
+ *
+ * The weights live in `weights.ts` so the UI's weight sandbox can reuse the
+ * exact same maths. Called with no second argument this is bit-identical to
+ * the original hard-coded formula.
  */
-export function druglikenessScore(props: MoleculeProps): number {
-  const g = (value: number, ideal: number, width: number) =>
-    Math.exp(-((value - ideal) ** 2) / (2 * width ** 2))
-
-  const sMw = g(props.mw, 350, 130)
-  const sLogP = g(props.logP, 2.5, 1.7)
-  const sHbd = g(props.hbd, 2, 1.6)
-  const sHba = g(props.hba, 5, 2.8)
-  const sRings = g(props.rings, 3, 1.8)
-
-  const raw = 0.3 * sMw + 0.25 * sLogP + 0.15 * sHbd + 0.15 * sHba + 0.15 * sRings
-  return round3(clamp(raw, 0, 1))
+export function druglikenessScore(props: MoleculeProps, weights: Weights = DEFAULT_WEIGHTS): number {
+  return scoreWithWeights(props, weights)
 }
 
 export function classify(score: number): MoleculeClass {

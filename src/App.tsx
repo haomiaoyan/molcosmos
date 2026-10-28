@@ -4,15 +4,24 @@ import { Hero } from './components/Hero'
 import { MoleculePanel, UniverseLegend } from './components/MoleculePanel'
 import { CosmosControls } from './components/CosmosControls'
 import { Shortlist } from './components/Shortlist'
+import { LabSection } from './components/LabSection'
 import { CosmosStats, FunnelSection, PipelineSection } from './components/Sections'
 import { Footer, LimitsSection, MethodSection } from './components/Sections2'
 import { Chrome } from './components/Sections2'
-import { findMoleculeById, spawnExplorationBatch, universe, type ExplorationStar, type MoleculeClass } from './lib/galaxy'
+import {
+  findMoleculeById,
+  rescoreMolecules,
+  rescoreUniverse,
+  spawnExplorationBatch,
+  type ExplorationStar,
+  type MoleculeClass,
+} from './lib/galaxy'
 import { I18nProvider, useI18n } from './lib/i18n'
 import { applyTheme, loadTheme, saveTheme, themeById, type ThemeId } from './lib/theme'
 import type { Molecule } from './lib/molecule'
 import { shareUrl, loadShortlist, resolveShortlist, saveShortlist, toggleShortlist } from './lib/shortlist'
 import { stepUniverse } from './lib/search'
+import { DEFAULT_WEIGHTS, isDefaultWeights, type Weights } from './lib/weights'
 
 function CosmosApp() {
   const { t } = useI18n()
@@ -24,10 +33,16 @@ function CosmosApp() {
   const [activeClass, setActiveClass] = useState<MoleculeClass | null>(null)
   const [saved, setSaved] = useState<string[]>(() => loadShortlist())
   const [themeId, setThemeId] = useState<ThemeId>(() => loadTheme())
+  const [weights, setWeights] = useState<Weights>(DEFAULT_WEIGHTS)
   const [toast, setToast] = useState<string | null>(null)
   const cosmosRef = useRef<HTMLElement | null>(null)
 
-  const catalogue = useMemo(() => universe(), [])
+  // The catalogue re-scores under the sandbox weights; positions never move.
+  const catalogue = useMemo(() => rescoreUniverse(weights), [weights])
+  const scoredExploration = useMemo(
+    () => rescoreMolecules(explorationStars, weights),
+    [explorationStars, weights],
+  )
   const shortlist = useMemo(
     () => resolveShortlist(saved, (id) => findMoleculeById(id)),
     [saved],
@@ -159,15 +174,16 @@ function CosmosApp() {
         </div>
         <div className={`cosmos__stage ${entered ? '' : 'cosmos__stage--dim'}`}>
           <CosmosScene
+            molecules={catalogue}
             onPick={handlePick}
-            explorationStars={explorationStars}
+            explorationStars={scoredExploration}
             focus={focus}
             selected={selected}
             activeClass={activeClass}
             sceneBg={sceneBg}
           />
           <CosmosControls
-            generated={explorationStars}
+            generated={scoredExploration}
             onSelect={revealMolecule}
             onRandom={randomMolecule}
           />
@@ -187,6 +203,7 @@ function CosmosApp() {
             saved={savedSelected}
             onToggleSave={toggleSave}
             onShare={copyShareLink}
+            customWeights={!isDefaultWeights(weights)}
           />
           <button type="button" className="explore-btn" onClick={triggerExploration}>
             <span className="explore-btn__pulse" aria-hidden="true" />
@@ -198,6 +215,7 @@ function CosmosApp() {
       <PipelineSection />
       <FunnelSection />
       <CosmosStats />
+      <LabSection weights={weights} onChange={setWeights} />
       <MethodSection />
       <LimitsSection />
       <Footer />

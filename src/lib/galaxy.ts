@@ -21,6 +21,7 @@ import {
   type MoleculeClass,
 } from './molecule'
 import { makeRng } from './rng'
+import { DEFAULT_WEIGHTS, encodeWeights, scoreWithWeights, type Weights } from './weights'
 
 export type { MoleculeClass } from './molecule'
 
@@ -140,19 +141,63 @@ export interface UniverseStats {
 
 let statsCache: UniverseStats | null = null
 
-export function universeStats(): UniverseStats {
-  if (statsCache) return statsCache
-  const all = universe()
+/** Aggregate the four class counts over any molecule list. */
+export function statsFor(molecules: readonly Molecule[]): UniverseStats {
   const byClass: Record<MoleculeClass, number> = { goldilocks: 0, candidate: 0, lead: 0, far: 0 }
   let sum = 0
-  let best = all[0]
-  for (const m of all) {
+  let best = molecules[0]
+  for (const m of molecules) {
     byClass[m.drugClass] += 1
     sum += m.score
     if (m.score > best.score) best = m
   }
-  statsCache = { total: all.length, byClass, best, meanScore: sum / all.length }
+  return {
+    total: molecules.length,
+    byClass,
+    best,
+    meanScore: molecules.length === 0 ? 0 : sum / molecules.length,
+  }
+}
+
+export function universeStats(): UniverseStats {
+  if (statsCache) return statsCache
+  statsCache = statsFor(universe())
   return statsCache
+}
+
+/**
+ * The catalogue scored under an arbitrary weight set.
+ *
+ * Positions, ids and seeds are untouched — only `score` and `drugClass` change,
+ * so the galaxy visibly re-sorts its brightness while the constellation stays
+ * put. Results are memoised per weight signature: the sandbox drags a slider
+ * dozens of times and each distinct set is only built once.
+ */
+const rescoreCache = new Map<string, Molecule[]>()
+
+export function rescoreUniverse(weights: Weights = DEFAULT_WEIGHTS): Molecule[] {
+  const key = encodeWeights(weights)
+  const cached = rescoreCache.get(key)
+  if (cached) return cached
+
+  const rescored = universe().map((molecule) => {
+    const score = scoreWithWeights(molecule.props, weights)
+    return { ...molecule, score, drugClass: classify(score) }
+  })
+  if (rescoreCache.size >= 12) {
+    const oldest = rescoreCache.keys().next().value
+    if (oldest !== undefined) rescoreCache.delete(oldest)
+  }
+  rescoreCache.set(key, rescored)
+  return rescored
+}
+
+/** Re-score an arbitrary molecule list (used for the ephemeral exploration stars). */
+export function rescoreMolecules<T extends Molecule>(molecules: readonly T[], weights: Weights): T[] {
+  return molecules.map((molecule) => {
+    const score = scoreWithWeights(molecule.props, weights)
+    return { ...molecule, score, drugClass: classify(score) }
+  })
 }
 
 /** Session-scoped registry so deep links and panels can resolve generated stars. */

@@ -7,7 +7,6 @@ import {
   EXPLORATION_COLOR,
   GALAXY_RADIUS,
   starColor,
-  universe,
   type ExplorationStar,
   type MoleculeClass,
 } from '../lib/galaxy'
@@ -19,17 +18,18 @@ import { nearestOnScreen, toNdc } from '../lib/pick'
 /* ------------------------------------------------------------------ */
 
 function StarField({
+  molecules,
   onPick,
   explorationStars,
   selected,
   activeClass,
 }: {
+  molecules: Molecule[]
   onPick: (m: Molecule) => void
   explorationStars: ExplorationStar[]
   selected?: Molecule | null
   activeClass?: MoleculeClass | null
 }) {
-  const molecules = useMemo(() => universe(), [])
   const pointsRef = useRef<THREE.Points>(null)
   const haloRef = useRef<THREE.Points>(null)
   const { camera, gl } = useThree()
@@ -560,6 +560,8 @@ function Bond({ a, b }: { a: { x: number; y: number; z: number }; b: { x: number
 /* ------------------------------------------------------------------ */
 
 interface CosmosSceneProps {
+  /** The catalogue, already scored under the active weights. */
+  molecules: Molecule[]
   onPick: (m: Molecule) => void
   explorationStars: ExplorationStar[]
   focus?: { x: number; y: number; z: number } | null
@@ -570,6 +572,7 @@ interface CosmosSceneProps {
 }
 
 export function CosmosScene({
+  molecules,
   onPick,
   explorationStars,
   focus,
@@ -642,6 +645,7 @@ export function CosmosScene({
         <ambientLight intensity={0.55} />
         <pointLight position={[0, 30, 0]} intensity={1.4} color="#aab8ff" distance={200} />
         <StarField
+          molecules={molecules}
           onPick={onPick}
           explorationStars={explorationStars}
           selected={selected}

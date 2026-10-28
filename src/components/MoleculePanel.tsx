@@ -23,6 +23,8 @@ interface Props {
   saved?: boolean
   onToggleSave?: (id: string) => void
   onShare?: (molecule: Molecule) => void
+  /** True when the sandbox weights differ from the published defaults. */
+  customWeights?: boolean
 }
 
 /**
@@ -47,7 +49,14 @@ function radarPoints(props: MoleculeProps): string {
   }).join(' ')
 }
 
-export function MoleculePanel({ molecule, onClose, saved = false, onToggleSave, onShare }: Props) {
+export function MoleculePanel({
+  molecule,
+  onClose,
+  saved = false,
+  onToggleSave,
+  onShare,
+  customWeights = false,
+}: Props) {
   const { t } = useI18n()
   const hydrogens = useMemo(
     () => (molecule ? estimateHydrogens(molecule.props.counts, molecule.props.rings) : 0),
@@ -128,7 +137,10 @@ export function MoleculePanel({ molecule, onClose, saved = false, onToggleSave, 
       </div>
 
       <div className="mol-panel__score">
-        <span className="mol-panel__score-label">{t('panel.score')}</span>
+        <span className="mol-panel__score-label">
+          {t('panel.score')}
+          {customWeights && <em className="mol-panel__custom">{t('lab.custom')}</em>}
+        </span>
         <div
           className="score-bar"
           role="img"
