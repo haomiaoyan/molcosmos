@@ -5,6 +5,7 @@ import { MoleculePanel, UniverseLegend } from './components/MoleculePanel'
 import { CosmosControls } from './components/CosmosControls'
 import { Shortlist } from './components/Shortlist'
 import { LabSection } from './components/LabSection'
+import { CompareSection } from './components/CompareSection'
 import { CosmosStats, FunnelSection, PipelineSection } from './components/Sections'
 import { Footer, LimitsSection, MethodSection } from './components/Sections2'
 import { Chrome } from './components/Sections2'
@@ -215,6 +216,7 @@ function CosmosApp() {
       <PipelineSection />
       <FunnelSection />
       <CosmosStats />
+      <CompareSection molecules={shortlist} />
       <LabSection weights={weights} onChange={setWeights} />
       <MethodSection />
       <LimitsSection />
