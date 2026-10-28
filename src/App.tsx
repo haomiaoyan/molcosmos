@@ -23,10 +23,11 @@ import { applyTheme, loadTheme, saveTheme, themeById, type ThemeId } from './lib
 import type { Molecule } from './lib/molecule'
 import { shareUrl, loadShortlist, resolveShortlist, saveShortlist, toggleShortlist } from './lib/shortlist'
 import { stepUniverse } from './lib/search'
+import { EMPTY_URL_STATE, readUrlState, writeUrlState, type UrlState } from './lib/urlState'
 import { DEFAULT_WEIGHTS, isDefaultWeights, type Weights } from './lib/weights'
 
-function CosmosApp() {
-  const { t } = useI18n()
+function CosmosApp({ initialUrl }: { initialUrl: UrlState }) {
+  const { t, lang } = useI18n()
   const [selected, setSelected] = useState<Molecule | null>(null)
   const [focus, setFocus] = useState<{ x: number; y: number; z: number } | null>(null)
   const [explorationStars, setExplorationStars] = useState<ExplorationStar[]>([])
@@ -34,7 +35,7 @@ function CosmosApp() {
   const [entered, setEntered] = useState(false)
   const [activeClass, setActiveClass] = useState<MoleculeClass | null>(null)
   const [saved, setSaved] = useState<string[]>(() => loadShortlist())
-  const [themeId, setThemeId] = useState<ThemeId>(() => loadTheme())
+  const [themeId, setThemeId] = useState<ThemeId>(() => initialUrl.theme ?? loadTheme())
   const [weights, setWeights] = useState<Weights>(DEFAULT_WEIGHTS)
   const [toast, setToast] = useState<string | null>(null)
   const cosmosRef = useRef<HTMLElement | null>(null)
@@ -59,28 +60,29 @@ function CosmosApp() {
 
   // Deep link support: ?star=MCX-000123 flies to a molecule on first paint.
   useEffect(() => {
-    const requested = new URLSearchParams(window.location.search).get('star')
-    if (!requested) return
-    const m = findMoleculeById(requested)
+    if (!initialUrl.star) return
+    const m = findMoleculeById(initialUrl.star)
     if (m) {
       setSelected(m)
       setFocus({ x: m.x, y: m.y, z: m.z })
       setEntered(true)
     }
-  }, [])
+  }, [initialUrl.star])
 
   useEffect(() => {
     saveShortlist(saved)
   }, [saved])
 
-  // Keep the address bar in step with the open molecule, so copying the URL
-  // from the browser shares the same deep link the 分享 button produces.
+  // Keep the address bar in step with the view, so copying the URL from the
+  // browser shares the same molecule, palette and language the visitor sees.
   useEffect(() => {
-    const url = new URL(window.location.href)
-    if (selected) url.searchParams.set('star', selected.id)
-    else url.searchParams.delete('star')
-    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
-  }, [selected])
+    const search = writeUrlState(window.location.search, {
+      star: selected?.id ?? null,
+      theme: themeId,
+      lang,
+    })
+    window.history.replaceState(null, '', `${window.location.pathname}${search}${window.location.hash}`)
+  }, [selected, themeId, lang])
 
   useEffect(() => {
     if (!toast) return
@@ -228,9 +230,14 @@ function CosmosApp() {
 }
 
 export default function App() {
+  // Read the link once, before anything renders: both the provider and the
+  // cosmos need it, and re-reading on every render would fight the sync effect.
+  const [initialUrl] = useState(() =>
+    typeof window === 'undefined' ? EMPTY_URL_STATE : readUrlState(window.location.search),
+  )
   return (
-    <I18nProvider>
-      <CosmosApp />
+    <I18nProvider initialLang={initialUrl.lang ?? undefined}>
+      <CosmosApp initialUrl={initialUrl} />
     </I18nProvider>
   )
 }

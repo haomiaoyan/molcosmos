@@ -509,8 +509,21 @@ const I18nContext = createContext<I18nValue>({
   t: (key, vars) => translate(key, 'zh', vars),
 })
 
-export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(() => loadLang())
+export function I18nProvider({
+  children,
+  initialLang,
+}: {
+  children: ReactNode
+  /** A language requested by link, which outranks the stored preference. */
+  initialLang?: Lang
+}) {
+  const [lang, setLangState] = useState<Lang>(() => initialLang ?? loadLang())
+
+  // A link that carries a language also makes it stick, the same way a link
+  // that carries a palette does.
+  useEffect(() => {
+    if (initialLang) saveLang(initialLang)
+  }, [initialLang])
 
   const setLang = useCallback((next: Lang) => {
     setLangState(next)
