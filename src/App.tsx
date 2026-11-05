@@ -24,6 +24,8 @@ import type { Molecule } from './lib/molecule'
 import { shareUrl, loadShortlist, resolveShortlist, saveShortlist, toggleShortlist } from './lib/shortlist'
 import { stepUniverse } from './lib/search'
 import { observeScrollbarWidth } from './lib/scrollbar'
+import { gsap, registerGsap } from './lib/gsap'
+import { scrollDuration } from './lib/useReveal'
 import { EMPTY_URL_STATE, readUrlState, writeUrlState, type UrlState } from './lib/urlState'
 import { DEFAULT_WEIGHTS, isDefaultWeights, type Weights } from './lib/weights'
 
@@ -52,6 +54,13 @@ function CosmosApp({ initialUrl }: { initialUrl: UrlState }) {
     [saved],
   )
   const sceneBg = themeById(themeId).sceneBg
+
+  // Plugins must be registered before any ScrollTrigger or scrollTo tween is
+  // created; the guard inside makes a second app mount (Fast Refresh, or a
+  // second root) a no-op instead of a duplicate registration.
+  useEffect(() => {
+    registerGsap()
+  }, [])
 
   // Paint the palette before first contentful paint of the themed surfaces.
   useEffect(() => {
@@ -108,7 +117,12 @@ function CosmosApp({ initialUrl }: { initialUrl: UrlState }) {
   const enterCosmos = useCallback(() => {
     setEntered(true)
     requestAnimationFrame(() => {
-      cosmosRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      const target = cosmosRef.current
+      if (!target) return
+      // ScrollToPlugin rather than `scrollIntoView`: the browser honours
+      // `scroll-behavior` for the native call, which made the duration depend on
+      // the UA and impossible to match with the rest of the page's motion.
+      gsap.to(window, { duration: scrollDuration(), scrollTo: target, ease: 'power2.inOut' })
     })
   }, [])
 
@@ -171,7 +185,7 @@ function CosmosApp({ initialUrl }: { initialUrl: UrlState }) {
   )
 
   const scrollToTop = useCallback(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    gsap.to(window, { duration: scrollDuration(), scrollTo: 0, ease: 'power2.inOut' })
   }, [])
 
   const savedSelected = Boolean(selected && saved.includes(selected.id))

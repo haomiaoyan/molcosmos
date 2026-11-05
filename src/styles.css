@@ -45,8 +45,12 @@
   box-sizing: border-box;
 }
 
+/* Scrolling is animated by ScrollToPlugin (lib/gsap.ts) so its duration and
+   easing can be matched to the rest of the page's motion and switched off under
+   `prefers-reduced-motion`. The native `scroll-behavior` property cannot do
+   either — it hands the duration to the browser. */
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
 }
 
 body {

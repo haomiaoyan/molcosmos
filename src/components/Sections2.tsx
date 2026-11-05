@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { GITHUB } from '../config'
+import { gsap, refreshTriggersWhenSettled, registerGsap, ScrollTrigger } from '../lib/gsap'
+import { prefersReducedMotion } from '../lib/motion'
+import { progressSource } from '../lib/useReveal'
 import { useI18n } from '../lib/i18n'
 import type { ThemeId } from '../lib/theme'
 import { TopnavTools } from './TopnavTools'
@@ -122,8 +125,6 @@ export function Chrome({ onEnter, themeId, onTheme }: { onEnter: () => void; the
 
   useEffect(() => {
     const onScroll = () => {
-      const total = document.documentElement.scrollHeight - window.innerHeight
-      setProgress(total > 0 ? Math.min(1, window.scrollY / total) : 0)
       // Highlight whatever sits under a probe line, rather than "the last section
 // whose top has merely crossed it". The old test let a short section lose to its
 // neighbour before the reader had finished with it: at a 900px viewport anything
@@ -145,6 +146,44 @@ export function Chrome({ onEnter, themeId, onTheme }: { onEnter: () => void; the
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // The progress bar is the only thing ScrollTrigger drives here. The
+  // highlight decision above stays a plain scroll listener on purpose: it reads
+  // three rects and compares them, and moving it behind a trigger would change
+  // when it settles.
+  //
+  // Reduced motion gets the plain arithmetic instead of a trigger. Swapping the
+  // bar's only data source for something a reduced-motion reader never creates
+  // is how the bar froze at zero: assertion 5 wants no triggers, not a
+  // decorative readout that quietly stops working.
+  useEffect(() => {
+    const readProgress = () => {
+      const total = document.documentElement.scrollHeight - window.innerHeight
+      setProgress(total > 0 ? Math.min(1, window.scrollY / total) : 0)
+    }
+
+    if (progressSource(prefersReducedMotion()) === 'scroll-listener') {
+      readProgress()
+      window.addEventListener('scroll', readProgress, { passive: true })
+      return () => window.removeEventListener('scroll', readProgress)
+    }
+
+    registerGsap()
+    const cancelRefresh = refreshTriggersWhenSettled()
+    const ctx = gsap.context(() => {
+      const trigger = ScrollTrigger.create({
+        start: 0,
+        end: 'max',
+        onUpdate: (self) => setProgress(self.progress),
+        onRefresh: (self) => setProgress(self.progress),
+      })
+      return () => trigger.kill()
+    })
+    return () => {
+      cancelRefresh()
+      ctx.revert()
+    }
   }, [])
 
   // The indicator is a single element that slides between items instead of one
