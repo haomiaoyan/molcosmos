@@ -1334,7 +1334,13 @@ body {
   position: relative;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--panel);
+  /* The panel is painted by `.station::after`, not here: the gradient ring
+     (`::before`) has to sit *under* an opaque layer, and a background on the
+     card itself would paint above both pseudo-elements and hide the ring.
+     `isolation` gives the card its own stacking context so the negative
+     `z-index` layers stay inside it instead of dropping behind the section. */
+  background: transparent;
+  isolation: isolate;
   backdrop-filter: blur(10px);
   padding: 44px 20px 20px;
   overflow: hidden;
@@ -1344,6 +1350,87 @@ body {
 .station:hover {
   transform: translateY(-4px);
   border-color: var(--line-strong);
+}
+
+/* The gradient edge from the uiverse set the user supplied
+   (`docs/ui-effects-source.md` #3, the "green-blue glow" card).
+
+   The source stacks a gradient div behind an inner div and lets the inner one
+   shrink on hover with `scale(0.98)`, which is why the edge is invisible at rest
+   and only about 1.9px wide on hover. Two adaptations were ruled on before this
+   was written:
+
+   - the edge is visible at rest (1px) and thickens on hover (2px), because the
+     source's all-or-nothing version left five cards indistinguishable from plain
+     panels;
+   - it is a ring, not a `scale`, because scaling the card scales its body copy.
+
+   The technique below is the one that survived an isolation test of four
+   candidates (`ringtest.html`, screenshotted side by side). The failures are
+   recorded because two of them looked correct in the stylesheet and were not:
+
+   | approach                          | result                                       |
+   |-----------------------------------|----------------------------------------------|
+   | `mask-composite: exclude`         | works, but needs mask support                |
+   | `background-clip: padding-box`    | **solid slab** — paints the whole padding box |
+   | two stacked layers (this one)     | works, no mask, no compositing               |
+   | `border-image`                    | works, but drops `border-radius` (square)    |
+
+   A gradient pseudo-element sits behind an opaque inner layer inset by the ring
+   width. Both layers inherit the card's rounding, so the corner stays 18px.
+   Nothing outside the card's box, so `.station`'s `overflow: hidden` — which it
+   needs for `.station__glow` — cannot clip the ring. */
+.station::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(163deg, var(--accent-2), var(--accent-3));
+  pointer-events: none;
+  /* Negative, so it paints under the content rather than over it. A positioned
+     pseudo-element at z-index 0 or auto paints *above* non-positioned siblings,
+     which covered the card's title and body entirely — the cards rendered as
+     empty gradient slabs. Negative z-index still respects the card's
+     `overflow: hidden`. */
+  z-index: -2;
+}
+
+/* The inner layer that leaves the 1px ring visible. It is the card's own panel
+   colour, so it reads as "the card, inset by 1px" rather than as a second
+   surface. `::after` paints after `::before`, which is why the opaque layer is
+   this one: it has to win over the gradient, not the other way round. */
+.station::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: calc(var(--radius) - 1px);
+  /* Two layers, not one: `--panel` is `rgba(14, 18, 38, 0.72)`, and 72% opacity
+     let the gradient underneath show through — the cards read as tinted glass
+     rather than as panels. `--bg` is the opaque page colour, so stacking it
+     under the panel restores the original look while keeping the ring. */
+  background:
+    linear-gradient(var(--panel), var(--panel)),
+    var(--bg);
+  pointer-events: none;
+  transition:
+    inset 0.22s,
+    border-radius 0.22s;
+  z-index: -1;
+}
+
+/* The ring thickens by moving the inner layer in, so the card's outer box and
+   its layout never change. */
+.station:hover::after {
+  inset: 2px;
+  border-radius: calc(var(--radius) - 2px);
+}
+
+/* Reduced motion keeps the ring — it is what says "this is a card" — and drops
+   the thickening animation. */
+@media (prefers-reduced-motion: reduce) {
+  .station::after {
+    transition: none;
+  }
 }
 
 .station__glow {
@@ -1709,37 +1796,64 @@ body {
   display: grid;
   gap: 6px;
   align-content: start;
-  /* These four entries are what the old `.class-card`s became. That grid had a
-     `:hover` lift and this one inherited nothing, so the census went from four
-     cards that answer the pointer to four dead columns. Restored here, and
-     slightly quieter than the cards were — a 2px lift rather than 4, because
-     these rows are the legend now, not the section's main reading. */
-  padding: 10px 12px;
-  margin: -10px -12px;
-  border: 1px solid transparent;
-  border-radius: calc(var(--radius) * 0.7);
+  /* These four entries are cards, not rows, because the user asked for the
+     supplied focus effect (ui-effects-source.md #4) and it needs cards to
+     enlarge. Taken from the source's `.cards:hover > .card:not(:hover)` idea,
+     which needs no JavaScript: the parent answers the pointer, the hovered child
+     grows, its siblings blur and shrink.
+
+     Two adaptations the source does not have to make. `blur(10px)` would
+     destroy the four blurbs this section exists to show, so the blur is 4px and
+     the shrink is 0.97 rather than 0.9. And the growth is 1.06, not the source's
+     1.1, because a 1.1 scale on a 380px-wide card would overlap its neighbour
+     inside a 1132px column. */
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) * 0.8);
+  background: var(--panel);
+  transform-origin: center top;
   transition:
-    transform 0.2s,
-    border-color 0.2s,
-    background-color 0.2s;
+    transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1),
+    filter 0.4s cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 0.4s cubic-bezier(0.22, 0.61, 0.36, 1),
+    border-color 0.4s;
 }
 
+/* The focused card rises above its blurred siblings; without a z-index the
+   scale would still overlap but the neighbour's border would draw over it. */
 .spectrum__legend-item:hover {
-  transform: translateY(-2px);
-  border-color: var(--line);
-  background-color: rgb(var(--accent-rgb) / 0.04);
+  position: relative;
+  z-index: 1;
+  transform: scale(1.06);
+  border-color: var(--line-strong);
 }
 
-/* Drop the movement, keep the row: a reader who has asked for less motion
-   should not get a transition that never resolves, and nothing here carries
-   meaning that the lift was expressing. */
-@media (prefers-reduced-motion: reduce) {
-  .spectrum__legend-item {
-    transition: none;
-  }
+/* Siblings only respond while the pointer is inside the group, which is the
+   whole mechanism — no listener, no state, and it undoes itself when the pointer
+   leaves the row.
 
-  .spectrum__legend-item:hover {
+   The blur is 2px, not the source's 10px and not even the 4px first tried here.
+   Measured against what is actually in these cards: the blurb is 0.84rem, so its
+   x-height is about 6.7px, and any blur past roughly half of that turns the
+   sentence into a grey smear — at 4px the neighbours were unreadable. 2px keeps
+   the depth cue, which is what the effect is for, and leaves the words legible.
+   The dimming and the shrink carry the rest of the focus. */
+.spectrum__legend:hover > .spectrum__legend-item:not(:hover) {
+  filter: blur(2px);
+  transform: scale(0.97);
+  opacity: 0.55;
+}
+
+/* Motion may stop, information may not: a reader who has asked for less motion
+   gets the same cards with none of the movement, and every word stays legible
+   because the blur is part of the movement rather than of the content. */
+@media (prefers-reduced-motion: reduce) {
+  .spectrum__legend-item,
+  .spectrum__legend:hover > .spectrum__legend-item:not(:hover) {
+    transition: none;
     transform: none;
+    filter: none;
+    opacity: 1;
   }
 }
 

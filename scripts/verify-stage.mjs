@@ -430,18 +430,31 @@ await loadAt(1440, 900)
     await sleep(600)
     const hovered = await evaluate(`(() => {
       const items = [...document.querySelectorAll('.spectrum__legend-item')]
+      const scaleOf = (el) => {
+        const m = getComputedStyle(el).transform.match(/matrix\\(([^)]+)\\)/)
+        return m ? Number(m[1].split(',')[0]) : 1
+      }
       const under = items.filter((el) => el.matches(':hover'))
+      const blurred = items.filter((el) => getComputedStyle(el).filter.includes('blur'))
       return {
         count: items.length,
         under: under.length,
-        lifted: items.filter((el) => getComputedStyle(el).transform !== 'none').length,
+        scales: items.map(scaleOf),
+        blurred: blurred.length,
       }
     })()`)
 
+    // The census entries are cards now, so the focus effect moves all four: the
+    // hovered one grows, the other three shrink and blur. Asserting "exactly one
+    // lifted" was right for the earlier plain-row version and wrong for this
+    // one — four transforms is the intended state, and the thing worth pinning
+    // is that exactly one is *larger* than the rest.
+    const focused = hovered.scales.filter((s) => s > 1.01).length
+    const shrunk = hovered.scales.filter((s) => s < 0.99).length
     check(
-      'T11. census rows respond to the pointer',
-      hovered.count === 4 && hovered.under === 1 && hovered.lifted === 1,
-      `${hovered.count} rows, ${hovered.under} under the pointer, ${hovered.lifted} lifted`,
+      'T11. census cards focus on the pointer',
+      hovered.count === 4 && hovered.under === 1 && focused === 1 && shrunk === 3 && hovered.blurred === 3,
+      `${hovered.count} cards, ${hovered.under} under the pointer, ${focused} enlarged, ${shrunk} shrunk, ${hovered.blurred} blurred`,
     )
   }
 }
@@ -529,6 +542,61 @@ await loadAt(1440, 900)
       'T12d. the glyph is centred in the button',
       Math.abs(centring.offX) <= 0.5 && Math.abs(centring.offY) <= 0.5,
       `offset x ${centring.offX}px, y ${centring.offY}px, padding ${centring.padding}`,
+    )
+  }
+}
+
+/* ---------- T13: the station cards wear a gradient ring ---------- */
+
+// From the uiverse set (ui-effects-source.md #3). Three implementations were
+// tried before one rendered correctly — `mask-composite` blacked the card out,
+// `background-clip: padding-box` painted a solid slab, and `border-image` dropped
+// the rounded corner. The surviving one is two stacked pseudo-elements, and the
+// assertions below pin the two properties that made the failures visible: the
+// ring exists at rest (not only on hover), and the copy stays readable on top.
+await loadAt(1440, 900)
+{
+  const ring = await evaluate(`(async () => {
+    const spacer = document.querySelector('.pin-spacer')
+    if (!spacer) return null
+    window.scrollTo(0, Math.round(spacer.getBoundingClientRect().top + window.scrollY - 64 + 475))
+    await new Promise((r) => setTimeout(r, 1300))
+    const card = document.querySelector('.station-track .station')
+    if (!card) return null
+    const before = getComputedStyle(card, '::after')
+    const grad = getComputedStyle(card, '::before')
+    const title = card.querySelector('.station__title')
+    return {
+      restInset: before.inset,
+      ringBackground: grad.backgroundImage.slice(0, 40),
+      innerRadius: before.borderRadius,
+      cardRadius: getComputedStyle(card).borderRadius,
+      titleText: title ? title.textContent.trim().slice(0, 12) : null,
+      titleOpacity: title ? getComputedStyle(title).opacity : null,
+      bodyLength: card.querySelector('.station__body')?.textContent?.length ?? 0,
+    }
+  })()`)
+
+  if (!ring) {
+    check('T13. station cards wear a gradient ring', false, 'no .station in the track')
+  } else {
+    check(
+      'T13a. the ring is painted by a gradient layer at rest',
+      ring.ringBackground.includes('gradient') && ring.restInset === '1px',
+      `background ${ring.ringBackground}, inner inset ${ring.restInset}`,
+    )
+    check(
+      'T13b. the ring keeps the card rounded',
+      ring.cardRadius !== '0px' && ring.innerRadius !== '0px',
+      `card radius ${ring.cardRadius}, inner radius ${ring.innerRadius}`,
+    )
+    // The two failed attempts both destroyed the copy: one covered the card with
+    // an opaque box, the other with a solid gradient. Readable text is the
+    // assertion that would have caught both.
+    check(
+      'T13c. the copy stays on top of the ring layers',
+      ring.titleText !== null && ring.titleOpacity === '1' && ring.bodyLength > 10,
+      `title "${ring.titleText}" at opacity ${ring.titleOpacity}, body ${ring.bodyLength} chars`,
     )
   }
 }

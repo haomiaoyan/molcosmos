@@ -126,8 +126,11 @@ export function SpectrumStrip({ molecules }: { molecules: readonly Molecule[] })
 
       {/* The counts live here as text as well as in the bar: a 4px segment is
           readable by a screen reader and by nobody else, and the bar alone
-          carries the ratio but not the absolute numbers. */}
-      <ul className="spectrum__legend">
+          carries the ratio but not the absolute numbers.
+          The four entries are cards, not plain rows, so the supplied hover
+          effect has something to focus: `:hover > :not(:hover)` blurs the
+          siblings without any JavaScript. */}
+      <ul className="spectrum__legend" data-focusable="true">
         {CLASS_ORDER.map((cls) => (
           <li key={cls} className="spectrum__legend-item">
             <p className="spectrum__legend-head">
