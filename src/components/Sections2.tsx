@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { GITHUB } from '../config'
 import { useI18n } from '../lib/i18n'
 import type { ThemeId } from '../lib/theme'
@@ -113,9 +113,12 @@ const NAV_SECTIONS = [
 
 /** Small scroll-progress bar + nav, pure decoration for the "冗余 UI" requirement. */
 export function Chrome({ onEnter, themeId, onTheme }: { onEnter: () => void; themeId: ThemeId; onTheme: (id: ThemeId) => void }) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const [progress, setProgress] = useState(0)
   const [active, setActive] = useState('top')
+  /** Where the sliding indicator belongs, in px relative to the link row. */
+  const [glider, setGlider] = useState<{ x: number; w: number } | null>(null)
+  const listRef = useRef<HTMLUListElement | null>(null)
 
   useEffect(() => {
     const onScroll = () => {
@@ -144,6 +147,49 @@ export function Chrome({ onEnter, themeId, onTheme }: { onEnter: () => void; the
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  // The indicator is a single element that slides between items instead of one
+  // background per item. Measuring the live DOM (rather than multiplying by an
+  // item index) keeps it exact when the copy switches language, when the label
+  // lengths differ, and when the row is squeezed on a narrow screen.
+  //
+  // This is deliberately separate from the probe-line highlight above: that
+  // decision (`active`) is untouched, and this effect only turns it into pixels.
+  //
+  // `lang` is a dependency because switching zh→en rewrites every label, which
+  // moves the whole row even though `active` has not changed — that case was
+  // measured 123px out of place without it.
+  useEffect(() => {
+    const list = listRef.current
+    if (!list) return
+
+    const measure = () => {
+      const index = NAV_SECTIONS.findIndex(([id]) => id === active)
+      const link = list.querySelectorAll('a')[index < 0 ? 0 : index]
+      if (!link) return
+      const listRect = list.getBoundingClientRect()
+      const linkRect = link.getBoundingClientRect()
+      // Slightly narrower than the label so the glow reads as an accent, not a
+      // second button.
+      const w = Math.max(18, linkRect.width * 0.66)
+      setGlider({ x: linkRect.left - listRect.left + (linkRect.width - w) / 2, w })
+    }
+
+    measure()
+
+    // Any width change moves the target, whether or not `active` changed:
+    // font loading, language switch, a narrower window, the tools row growing.
+    const observer =
+      typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null
+    observer?.observe(list)
+    window.addEventListener('resize', measure)
+    document.fonts?.ready.then(measure).catch(() => {})
+
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [active, lang])
+
   return (
     <>
       <div className="progress-bar" aria-hidden="true" style={{ width: `${progress * 100}%` }} />
@@ -151,7 +197,14 @@ export function Chrome({ onEnter, themeId, onTheme }: { onEnter: () => void; the
         <span className="topnav__brand mono" onClick={onEnter} role="button" tabIndex={0}>
           MolCosmos
         </span>
-        <ul>
+        <ul ref={listRef}>
+          {glider && (
+            <span
+              className="topnav__glider"
+              aria-hidden="true"
+              style={{ transform: `translateX(${glider.x}px)`, width: `${glider.w}px` }}
+            />
+          )}
           {NAV_SECTIONS.map(([id, key]) => (
             <li key={id} className={active === id ? 'topnav__item--active' : ''}>
               <a href={`#${id}`}>{t(key)}</a>

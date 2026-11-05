@@ -129,6 +129,43 @@ body {
      right edge on a narrow screen. */
   flex: 1 1 auto;
   min-width: 0;
+  /* The sliding indicator is absolutely positioned against this row. */
+  position: relative;
+}
+
+/* One glowing bar that slides between items, instead of one background per
+   item. The overshoot easing is what gives it the springy feel: the bar
+   arrives, dips a hair past and settles. */
+.topnav__glider {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  box-shadow:
+    0 0 10px 1px rgb(var(--accent-rgb) / 0.75),
+    0 0 24px 3px rgb(var(--accent-rgb) / 0.35);
+  pointer-events: none;
+  will-change: transform, width;
+  transition:
+    transform 0.5s cubic-bezier(0.37, 1.95, 0.66, 0.56),
+    width 0.4s cubic-bezier(0.37, 1.95, 0.66, 0.56);
+}
+
+/* The diffuse bloom under the bar. A glow, not a second line: it is blurred
+   far more than the bar is tall so it reads as light, not as a shape. */
+.topnav__glider::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 300%;
+  height: 700%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse at center, rgb(var(--accent-rgb) / 0.5), transparent 70%);
+  filter: blur(6px);
+  pointer-events: none;
 }
 
 .topnav a {
@@ -139,6 +176,9 @@ body {
   text-decoration: none;
   font-size: 0.9rem;
   transition: color 0.2s, background 0.2s;
+  /* Sit above the indicator so its glow never washes over the glyphs. */
+  position: relative;
+  z-index: 1;
 }
 
 .topnav a:hover {
@@ -146,9 +186,10 @@ body {
   background: rgb(var(--line-rgb) / 0.12);
 }
 
+/* The active item keeps its gold text; the pill background it used to carry is
+   now the sliding bar, so a jump animates one thing instead of two. */
 .topnav__item--active a {
   color: var(--accent);
-  background: rgb(var(--accent-rgb) / 0.1);
 }
 
 /* ---------- top-bar tools: palette, language, GitHub ---------- */
@@ -2653,5 +2694,11 @@ html[lang='en'] .limits-list strong {
   .compare__chip,
   .timeline__card {
     transition-property: color, background-color, border-color, box-shadow, opacity;
+  }
+
+  /* The sliding nav indicator keeps its glow but jumps instead of travelling:
+     the position is still information, only the motion is removed. */
+  .topnav__glider {
+    transition: none;
   }
 }
