@@ -1,4 +1,5 @@
 import { useI18n } from '../lib/i18n'
+import { pointerVars, usePointerField } from '../lib/pointer'
 import { HeroMolecule } from './HeroMolecule'
 import { HeroStage } from './HeroStage'
 
@@ -9,8 +10,12 @@ interface Props {
 
 export function Hero({ onStart, onExplore }: Props) {
   const { t } = useI18n()
+  // The backdrop leans towards the pointer; the title picks up a highlight
+  // that follows it. Neither moves the text itself — see lib/pointer.ts.
+  const { ref, field } = usePointerField<HTMLElement>()
+
   return (
-    <section className="hero" id="top">
+    <section className="hero" id="top" ref={ref} style={pointerVars(field)}>
       <HeroStage />
       <div className="hero__inner">
         <div className="hero__molecule-slot">

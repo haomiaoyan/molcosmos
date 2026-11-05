@@ -175,6 +175,9 @@ body {
   color: var(--text-dim);
   text-decoration: none;
   font-size: 0.9rem;
+  /* Without this the CJK labels wrap one glyph per line as soon as the row
+     runs out of room, which made the bar 100px tall on tablets and phones. */
+  white-space: nowrap;
   transition: color 0.2s, background 0.2s;
   /* Sit above the indicator so its glow never washes over the glyphs. */
   position: relative;
@@ -190,6 +193,30 @@ body {
    now the sliding bar, so a jump animates one thing instead of two. */
 .topnav__item--active a {
   color: var(--accent);
+}
+
+/* Nine CJK labels plus the tools row do not fit a tablet. Rather than let the
+   links squeeze into columns of single glyphs, give the row its own horizontal
+   scroller: the bar stays one line and the reader can flick it. */
+@media (max-width: 1000px) {
+  .topnav ul {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    justify-content: flex-start;
+    /* Keep the glow from being clipped by the scroll container. */
+    padding-bottom: 3px;
+    margin-bottom: -3px;
+  }
+
+  .topnav ul::-webkit-scrollbar {
+    display: none;
+  }
+
+  .topnav a {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
 }
 
 /* ---------- top-bar tools: palette, language, GitHub ---------- */
@@ -364,6 +391,37 @@ body {
     radial-gradient(560px 380px at 24% 64%, rgb(var(--accent-2-rgb) / 0.14), transparent 65%),
     radial-gradient(900px 500px at 50% 120%, rgb(var(--accent-rgb) / 0.12), transparent 60%);
   animation: hero-drift 14s ease-in-out infinite alternate;
+  /* Pointer parallax. The layer is 40% larger than the hero so it can shift a
+     long way without exposing an edge — at ±3.5% the movement measured about
+     8px, which nobody could see, so the amount is deliberately larger here. */
+  transform: translate3d(
+    calc((var(--mx, 0.5) - 0.5) * -14%),
+    calc((var(--my, 0.5) - 0.5) * -10%),
+    0
+  );
+  transition: transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* A second, much softer bloom that lands where the pointer is. This is the
+   "the light notices you" layer: it is drawn on top of the drifting gradient
+   and fades in only while the pointer is inside the hero. */
+.hero__stage-glow::after {
+  content: '';
+  position: absolute;
+  left: var(--mpx, 50%);
+  top: var(--mpy, 50%);
+  width: 46vmax;
+  height: 46vmax;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle,
+    rgb(var(--accent-rgb) / 0.1) 0%,
+    rgb(var(--accent-3-rgb) / 0.06) 34%,
+    transparent 68%
+  );
+  opacity: calc(var(--m-on, 0) * 0.9);
+  transition: opacity 0.45s ease, left 0.2s ease-out, top 0.2s ease-out;
+  pointer-events: none;
 }
 
 .hero__stage-dots {
@@ -515,6 +573,40 @@ body {
   margin: 26px 0 18px;
   font-weight: 800;
   letter-spacing: 0.01em;
+  position: relative;
+}
+
+/* The title's answer to the pointer: a soft light that passes over the glyphs
+   without moving or recolouring them.
+
+   The obvious implementation — a translucent radial dropped on top of the
+   headline — was measured and rejected: over a text box it lightens the whole
+   rectangle, so the title sat on a visible grey card from x≈390 to x≈1200.
+
+   The light is therefore painted INTO the glyphs instead of over them. The
+   `h1` carries the pointer-following gradient as its own background and clips
+   it to the text, and each `.hero-line` / `.hero__accent` inherits it via
+   `background-clip: text` — so the highlight only exists where there is ink,
+   and the empty area between lines stays untouched. */
+/* The title's answer to the pointer.
+
+   Two overlay approaches were measured and rejected:
+   - a translucent radial on top: lightens the whole text box, so the headline
+     sat on a visible grey card from x≈390 to x≈1200;
+   - `background-clip: text` on the h1: the gradient is opaque, so it replaced
+     the text colour and the gold accents vanished.
+
+   A glow that follows the pointer is what actually works here. The offset is
+   tiny (a few px towards the cursor) and `drop-shadow` only ever adds light,
+   so the letterforms never move, never change colour, and the gold accents
+   keep their own shadow because they carry their own `--glow`.
+   Both properties are on the same transition so the light eases rather than
+   snapping from point to point. */
+.hero__title {
+  filter:
+    drop-shadow(calc((var(--mx, 0.5) - 0.5) * 26px) calc((var(--my, 0.5) - 0.5) * 20px) 14px rgb(var(--accent-rgb) / 0.55))
+    drop-shadow(calc((var(--mx, 0.5) - 0.5) * 14px) calc((var(--my, 0.5) - 0.5) * 11px) 4px rgb(var(--accent-3-rgb) / 0.45));
+  transition: filter 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 /* One line per clause. Kept as block boxes so the (later) SplitText pass can
@@ -2694,6 +2786,25 @@ html[lang='en'] .limits-list strong {
   .compare__chip,
   .timeline__card {
     transition-property: color, background-color, border-color, box-shadow, opacity;
+  }
+
+  /* The pointer parallax is motion, so it goes: the glow keeps its drift-free
+     position and the follow-light never appears. The CSS variables stay at
+     their 50% defaults, which renders both layers centred. */
+  .hero__stage-glow {
+    transform: none;
+    transition: none;
+  }
+
+  .hero__stage-glow::after {
+    display: none;
+  }
+
+  /* The follow-light is pointer-driven motion, so the title keeps its own
+     shadow only. */
+  .hero__title {
+    filter: none;
+    transition: none;
   }
 
   /* The sliding nav indicator keeps its glow but jumps instead of travelling:
