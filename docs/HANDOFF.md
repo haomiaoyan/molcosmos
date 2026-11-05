@@ -1,8 +1,8 @@
 # 交接说明 · MolCosmos 改版
 
 > **新会话从这里读起。**
-> 最后更新：2026-11-05 15:44
-> 当前状态：**SDS v1.2 · 批次 1 / 1.5 / 1.6 / 1.7 / 2 / 3 已实施 · 光晕修复已实施 · 下一步是批次 4**
+> 最后更新：2026-11-05 19:45
+> 当前状态：**SDS v1.2 · 批次 1 / 1.5 / 1.6 / 1.7 / 2 / 3 已实施 · 光晕修复已实施 · 4 条 uiverse 效果已用 · 批次 4 经用户决定作废**
 
 ---
 
@@ -105,11 +105,17 @@ node scripts/verify.mjs --url http://localhost:4416/
 ### 验收基线（当前应全过）
 
 ```
-tsc        0 error
-vitest     121/121 pass
-build      成功
-verify.mjs 16/16 PASS
+tsc             0 error
+vitest          168/168 pass   （17 个测试文件）
+build           成功
+verify.mjs      16/16 PASS     （批次 1-2：首屏几何、舞台铺满）
+verify-glow.mjs 12/12 PASS     （光晕尺寸与死区）
+verify-stage.mjs 23/23 PASS    （批次 3：长舞台、光谱带、时间轴、GitHub 填充、渐变环）
 ```
+
+**三套脚本都要跑**，只跑 `verify.mjs` 会漏掉后两批的回归。
+`verify-glow.mjs` 的触摸断言单独起一个浏览器进程——CDP 的
+`setTouchEmulationEnabled` 开了关不掉，会污染后续视口（详见 §九之二）。
 
 ---
 
@@ -292,27 +298,48 @@ npm run build     → 失败（build 含 tsc）
 
 ---
 
-## 九、下一步（批次 4：双主题）
+## 九、批次 4（双主题）：**经用户决定作废**
 
-按 SDS §5 批次 4。
+2026-11-05，用户明确决定：**背景色不改**，5 套主题全部保留，批次 4 不实施。
 
-**内容**
-- `theme.ts` 5→2 + `colorScheme` 动态
-- `themes/paper.ts` 新建（暖纸米白 `#ece7dc` + 朱砂 `#c2410c`）
-- `urlState.ts` 旧 id 映射 + 新测试
-- `i18n.tsx` 删 3 条 `theme.*`、加 1 条 `theme.paper`
-- `TopnavTools.tsx` 两处 `t(labelKey)` 修类型
-- `styles.css` 10 处 literal 变量化 + 新增 4 个变量
-- `index.html` theme-color 交给 JS
-- `README.md` 三处同步
+计划文件 `docs/plan-batch4-themes.md` 已标记作废，但**保留作为记录**——它写明了
+将来若要做会踩的坑：
 
-**验收**
-```bash
-npx tsc --noEmit && npx vitest run && npm run build
-node scripts/verify.mjs        # 16/16
-node scripts/verify-glow.mjs   # 12/12
-node scripts/verify-stage.mjs  # 15/15
-```
+- 砍主题触发 **14 处 TS 报错**（`theme.ts` 8、`TopnavTools.tsx` 2、`urlState.test.ts` 3）
+- `npx vitest run` 仍全绿（esbuild 剥类型），**只有 `npm run build` 能拦住**
+- 光晕用 `mix-blend-mode: screen`，**白底上等于不可见**
+- 批次 3 的 `.stage-pin` 用深空配色，浅色主题下会画出深色矩形（7 个舞台变量没有值）
+- 实测对比度：深空 `--text-mute` `#5f6c92` 只有 **3.89:1**，低于 4.5
+  （用户选择不改，若将来有人问起，这是已知项而非疏漏）
+
+**不要照着实施。**
+
+---
+
+## 九之三、4 条 uiverse 效果已落地（2026-11-05）
+
+用户提供的 5 条效果（`docs/ui-effects-source.md`）全部用上或已用：
+
+| # | 效果 | 落地位置 | 备注 |
+|---|---|---|---|
+| 1 | 社交图标 hover 填充 + tooltip | **导航 GitHub 按钮** | 填充 `0→100%`；原文 50px 圆→本项目 32px 胶囊 |
+| 2 | 日/月主题切换器 | — | 主题不做了，本批未用 |
+| 3 | 渐变边框卡片 | **五关卡卡片** | 常驻 1px + hover 2px |
+| 4 | 卡片 hover 放大 + 其余模糊 | **宇宙普查四张卡** | blur 从 10px 降到 2px（文字 0.84rem，x-height 6.7px） |
+| 5 | 竖向滑块 glider | 导航指示器 | 批次 1.5 已用 |
+
+**效果 3 的实现代价（重要）**：试了三种写法，前两种**在样式表里看起来都对**：
+
+| 方案 | 实际渲染 |
+|---|---|
+| `mask-composite: exclude` | 整张卡纯黑（实测 380×227 的 `#05060f`） |
+| `background-clip: padding-box` | 实心青紫色块，文字被盖住 |
+| `border-image` | 能用，但**按规范忽略 `border-radius`**，卡片变直角 |
+| **两层伪元素叠加** | ✅ 圆角保留、环可见、文字正常 |
+
+最终：`.station::before` 画渐变，`.station::after` 用面板色内缩 1px。
+`.station` 自身背景必须去掉（否则盖住环），面板色由内层承担；
+又因 `--panel` 是 0.72 半透明，内层还要垫一层不透明的 `--bg`。
 
 > **本批必须重跑批次 1-3 的全部视觉验收**：主题变了，之前的截图全部失效。
 
