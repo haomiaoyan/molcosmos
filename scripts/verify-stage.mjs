@@ -405,6 +405,47 @@ await loadAt(1440, 900, { reduceMotion: true })
   )
 }
 
+/* ---------- T11: the census rows still answer the pointer ---------- */
+
+// The four `.class-card`s this section used to draw had a `:hover` lift. When
+// they became spectrum legend rows the lift did not come with them, and nothing
+// in any suite noticed — the section rendered correctly and simply stopped
+// responding. That is exactly the class of regression a size check cannot see,
+// so it gets one that moves a real pointer.
+await loadAt(1440, 900)
+{
+  const setup = await evaluate(`(async () => {
+    const item = document.querySelector('.spectrum__legend-item')
+    if (!item) return null
+    item.scrollIntoView({ block: 'center' })
+    await new Promise((r) => setTimeout(r, 900))
+    const rect = item.getBoundingClientRect()
+    return { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) }
+  })()`)
+
+  if (!setup) {
+    check('T11. census rows respond to the pointer', false, 'no .spectrum__legend-item found')
+  } else {
+    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: setup.x, y: setup.y, button: 'none' })
+    await sleep(600)
+    const hovered = await evaluate(`(() => {
+      const items = [...document.querySelectorAll('.spectrum__legend-item')]
+      const under = items.filter((el) => el.matches(':hover'))
+      return {
+        count: items.length,
+        under: under.length,
+        lifted: items.filter((el) => getComputedStyle(el).transform !== 'none').length,
+      }
+    })()`)
+
+    check(
+      'T11. census rows respond to the pointer',
+      hovered.count === 4 && hovered.under === 1 && hovered.lifted === 1,
+      `${hovered.count} rows, ${hovered.under} under the pointer, ${hovered.lifted} lifted`,
+    )
+  }
+}
+
 ws.close()
 chrome.kill()
 await sleep(400)

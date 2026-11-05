@@ -1653,6 +1653,38 @@ body {
   display: grid;
   gap: 6px;
   align-content: start;
+  /* These four entries are what the old `.class-card`s became. That grid had a
+     `:hover` lift and this one inherited nothing, so the census went from four
+     cards that answer the pointer to four dead columns. Restored here, and
+     slightly quieter than the cards were — a 2px lift rather than 4, because
+     these rows are the legend now, not the section's main reading. */
+  padding: 10px 12px;
+  margin: -10px -12px;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius) * 0.7);
+  transition:
+    transform 0.2s,
+    border-color 0.2s,
+    background-color 0.2s;
+}
+
+.spectrum__legend-item:hover {
+  transform: translateY(-2px);
+  border-color: var(--line);
+  background-color: rgb(var(--accent-rgb) / 0.04);
+}
+
+/* Drop the movement, keep the row: a reader who has asked for less motion
+   should not get a transition that never resolves, and nothing here carries
+   meaning that the lift was expressing. */
+@media (prefers-reduced-motion: reduce) {
+  .spectrum__legend-item {
+    transition: none;
+  }
+
+  .spectrum__legend-item:hover {
+    transform: none;
+  }
 }
 
 .spectrum__legend-head {
