@@ -352,7 +352,15 @@ body {
   opacity: 0.4;
 }
 
-.topnav__github {
+/* Scoped to `.topnav` on purpose: the bare `.topnav__github` selector is
+   specificity (0,1,0) and loses to `.topnav a` at (0,1,1), which quietly put
+   `display: block` and `padding: 6px 14px` back on this 32px pill. The visible
+   symptom was the glyph sitting 7.5px right of centre — measured, not eyeballed:
+   button centre x 1381, glyph centre x 1388.5. The padding is what did it, so
+   both the display and the padding have to be re-asserted at a winning weight
+   rather than assumed. */
+.topnav .topnav__github {
+  display: inline-flex;
   width: 32px;
   padding: 0;
   justify-content: center;
@@ -368,7 +376,7 @@ body {
    32px pill inside a 56px fixed nav, so the wash starts transparent enough to
    read as light rather than as a second button, and the glyph is lifted above it
    with `z-index` instead of relying on document order. */
-.topnav__github-fill {
+.topnav .topnav__github-fill {
   position: absolute;
   /* Bottom-anchored, and `calc(100% + 2px)` rather than `100%`: `height` on an
      absolutely positioned child resolves against the *padding* box, so 100%
@@ -383,18 +391,18 @@ body {
   z-index: 0;
 }
 
-.topnav__github svg {
+.topnav .topnav__github svg {
   position: relative;
   z-index: 1;
 }
 
-.topnav__github:hover .topnav__github-fill {
+.topnav .topnav__github:hover .topnav__github-fill {
   height: calc(100% + 2px);
 }
 
 /* The glyph has to stay legible over the wash: `--text` on the accent tint,
    which is a different pairing from the resting `--text-dim` on the scrim. */
-.topnav__github:hover {
+.topnav .topnav__github:hover {
   color: var(--text);
 }
 
@@ -3122,7 +3130,7 @@ html[lang='en'] .limits-list strong {
     padding: 0 9px;
   }
 
-  .topnav__github {
+  .topnav .topnav__github {
     width: 30px;
     padding: 0;
   }

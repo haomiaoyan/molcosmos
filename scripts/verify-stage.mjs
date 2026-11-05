@@ -508,6 +508,28 @@ await loadAt(1440, 900)
       hovered.glyphOnTop && hovered.fillIgnoresPointer,
       `glyph on top ${hovered.glyphOnTop}, pointer-events none ${hovered.fillIgnoresPointer}`,
     )
+
+    // The glyph must be centred in its pill. `.topnav a` outranks a bare
+    // `.topnav__github`, so `display: block` and `padding: 6px 14px` came back
+    // on this button and pushed the glyph 7.5px right of centre — visible, but
+    // no assertion existed for it, so nothing failed. Measured, not eyeballed.
+    const centring = await evaluate(`(() => {
+      const a = document.querySelector('.topnav__github')
+      const svg = a.querySelector('svg')
+      const ar = a.getBoundingClientRect()
+      const sr = svg.getBoundingClientRect()
+      return {
+        offX: +(((sr.left + sr.right) / 2) - ((ar.left + ar.right) / 2)).toFixed(2),
+        offY: +(((sr.top + sr.bottom) / 2) - ((ar.top + ar.bottom) / 2)).toFixed(2),
+        padding: getComputedStyle(a).padding,
+      }
+    })()`)
+
+    check(
+      'T12d. the glyph is centred in the button',
+      Math.abs(centring.offX) <= 0.5 && Math.abs(centring.offY) <= 0.5,
+      `offset x ${centring.offX}px, y ${centring.offY}px, padding ${centring.padding}`,
+    )
   }
 }
 
