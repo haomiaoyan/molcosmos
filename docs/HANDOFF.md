@@ -1,8 +1,8 @@
 # 交接说明 · MolCosmos 改版
 
 > **新会话从这里读起。**
-> 最后更新：2026-11-05 14:45
-> 当前状态：**SDS v1.1 定稿 · 批次 1 / 1.5 / 1.6 / 1.7 已实施并提交 · 下一步是批次 2**
+> 最后更新：2026-11-05 15:02
+> 当前状态：**SDS v1.1 定稿 · 批次 1 / 1.5 / 1.6 / 1.7 / 2 已实施并提交 · 下一步是批次 3**
 
 ---
 
@@ -16,7 +16,7 @@
 ✅ 阶段 5  SDS 撰写                  → docs/sds-motion-and-hero.md (v1.1, 1185 行)
 ✅ 阶段 6  实测校正                  9 处 SDS 错误修正
 ✅ 阶段 7  交接文档                  本文件
-🟡 阶段 8  实施                     批次 1-1.7 完成，批次 2-4 未开始
+🟡 阶段 8  实施                     批次 1-2 完成，批次 3-4 未开始
 ```
 
 ### 已提交的批次
@@ -27,12 +27,12 @@
 | `693eb12` | — | **批次 1.5** 导航动画：滑动发光指示器 |
 | `350c0e1` | — | **批次 1.6** 鼠标互动（背景视差 + 标题跟随光晕）+ 导航竖排修复 |
 | `5e95936` | — | **批次 1.7** 光晕同步修复（延迟/位置/亮度） |
+| `49e696a` | `v2.0-p2` | **批次 2** GSAP 系统：ScrollToPlugin 滚动、进度条 ScrollTrigger、121 测试 |
 
 ### 未开始的批次
 
 | 批次 | 内容 | 依赖 |
 |---|---|---|
-| **2** | 引入 `gsap@3.15.1`、ScrollTrigger、ScrollToPlugin、章节入场 | 批次 1 |
 | **3** | 后半段重构图：五关卡横向长舞台、光谱带、时间轴轴、方法说明去卡片 | 批次 2 |
 | **4** | 双主题（深空 + 米白 `#ece7dc`/朱砂 `#c2410c`）+ 旧 id 重定向 | 批次 1-3 |
 
@@ -69,7 +69,7 @@ export TEMP="$(pwd)/.tmp-build" TMP="$(pwd)/.tmp-build"
 mkdir -p .tmp-build
 
 npx tsc --noEmit                       # 类型检查
-npx vitest run                         # 107 tests / 10 files
+npx vitest run                         # 121 tests / 13 files
 npm run build                          # 含 tsc，是唯一构建门禁
 
 # 验收脚本
@@ -83,7 +83,7 @@ node scripts/verify.mjs --url http://localhost:4416/
 
 ```
 tsc        0 error
-vitest     107/107 pass
+vitest     121/121 pass
 build      成功
 verify.mjs 16/16 PASS
 ```
@@ -94,13 +94,14 @@ verify.mjs 16/16 PASS
 
 | 约束 | 后果 |
 |---|---|
-| 唯一新增依赖 `gsap@3.15.1`（批次 2 才引入，写死不写 `^`）+ `ws@8.22.0`（已在 devDeps） | 引入其他包需重新过审 |
+| 唯一新增依赖 `gsap@3.15.1`（已在批次 2 引入，写死不写 `^`）+ `ws@8.22.0`（已在 devDeps） | 引入其他包需重新过审 |
 | **不碰 `Sections2.tsx` 的 probe-line 高亮判定**（`if (rect.top > probe) continue` 那段） | 会丢 `abfa669` 的修复 |
-| **不碰** `galaxy.ts` / `molecule.ts` / `search.ts` / `weights.ts` | 数据正确性核心，107 条测试保护 |
+| **不碰** `galaxy.ts` / `molecule.ts` / `search.ts` / `weights.ts` | 数据正确性核心，107 条数据测试保护 |
 | **不改** `CLASS_COLORS` 色值 | 那是数据编码色，不是主题色 |
 | 全宽层用 `calc(100vw - var(--sbw))`，**不用裸 `100vw`** | 会溢出 8px |
 | 每批结束 `npm run build` + 打 tag | CI 会拒、无法回滚 |
 | reduced-motion 下信息一条不少 | 无障碍硬要求 |
+| 只用 `lib/gsap.ts` 注册插件，**消费者不得从 `'gsap'` 直接 import** | 重复注册会让 ScrollTrigger refresh 顺序不可预测 |
 
 ---
 
@@ -190,6 +191,25 @@ npm run build     → 失败（build 含 tsc）
 | 位置不同步（-146px） | 光晕是 `.hero__stage-glow` 的子元素，而该层 `inset:-20%` 且有视差位移 | 移到 `.hero__stage` 直接子元素，X 用视口坐标 |
 | 不明显 | alpha 只有 0.1 | 提到 0.55 + `mix-blend-mode: screen` |
 
+### 批次 2：GSAP 系统
+
+- `lib/gsap.ts` 单点注册（`registerGsap` 幂等 + `refreshTriggersWhenSettled`）
+- `lib/useReveal.ts`：`useReveal` hook + 三个纯函数 `revealPlan` / `scrollDuration` / `progressSource`
+- `App.tsx` 两处滚动改 `ScrollToPlugin`，`useEffect(() => registerGsap(), [])`
+- `Sections2.tsx` **只把 `setProgress` 换掉**，probe-line 高亮逐字未动
+- `styles.css` `scroll-behavior: smooth → auto`
+
+**计划外发现的三件事（都是实测才暴露的）**
+
+| 问题 | 根因 | 修法 |
+|---|---|---|
+| reduced-motion 下进度条永远 0 | 进度条唯一数据源是 ScrollTrigger，而该分支不创建它 | `progressSource()` 分流：reduced 走原生 scroll 监听 |
+| 进度条系统性偏高 ~3.5% | `end:'max'` 在创建时缓存文档高度，而页面在字体加载后会长 | `fonts.ready` + `load` 各 `ScrollTrigger.refresh()` 一次 |
+| `scroll-behavior: smooth` 无法控制时长 | 原生属性把时长交给 UA，且 reduced 下无法关闭 | 全走 ScrollToPlugin，`duration` 由 `scrollDuration()` 给（reduced → 0） |
+
+> 修前实测：滚动到底时进度条读到 93%（应 100%）。修后 `10.00 / 50.01 / 90.00` 对 `10 / 50.01 / 90`。
+> **这个 `end:'max'` 缓存问题会同样偏移批次 3 的 pin**，所以必须放在批次 3 之前解决。
+
 ---
 
 ## 七、试过但失败的方案（不要再试）
@@ -203,6 +223,8 @@ npm run build     → 失败（build 含 tsc）
 | 只监听 `resize` 修 `--sbw` | 同上 |
 | 卡片放大到 `50vw` 制造位移 | 用户明确否决"太大" |
 | `.stage-pin` 挂 `.app` 外 | 两侧全黑（v6 的问题） |
+| 把进度条只接 ScrollTrigger | reduced-motion 分支不建 trigger，进度条永久停在 0 |
+| 信 `end:'max'` 的首次测量 | 创建时缓存文档高度，字体加载后偏高 ~3.5% |
 
 ---
 
@@ -233,27 +255,31 @@ npm run build     → 失败（build 含 tsc）
 
 ---
 
-## 九、下一步（批次 2）
+## 九、下一步（批次 3）
 
-按 SDS §5 批次 2：
+按 SDS §5 批次 3：
 
 **内容**
-- `package.json` 加 `"gsap": "3.15.1"`
-- 新建 `src/lib/gsap.ts`（单点 `registerPlugin`）
-- 新建 `src/lib/useReveal.ts`（章节入场，`gsap.context` + `matchMedia`）
-- `App.tsx` 两处滚动改 `ScrollToPlugin`：
-  - `enterCosmos` 里的 `scrollIntoView`
-  - `scrollToTop` 里的 `window.scrollTo`
-- `Sections2.tsx`：**只把 `setProgress` 换成 ScrollTrigger**，`probe` + `setActive` 原样保留
-- `styles.css` 删 `html { scroll-behavior: smooth }`（**批次 1 验收已完成，现在可以删**）
+- `src/lib/useStageTravel.ts`（`stageTravel` / `stageSpan` / `stageFrame`）+ 单测
+- `StationStage.tsx`、`SpectrumStrip.tsx`、`TimelineAxis.tsx` 新建
+- `Sections.tsx` 换用前两个
+- `TimelineSection.tsx` 换用第三个
+- `MethodSection` 去卡片
+- `styles.css` 新增规则族
 
 **验收**
 ```bash
-npx tsc --noEmit && npm run build
-node scripts/verify.mjs --url http://localhost:XXXX/   # 断言 1-7（6 可 SKIP，此时还没 pin）
+npx tsc --noEmit && npx vitest run && npm run build
+node scripts/verify.mjs --url http://localhost:XXXX/   # 10 条全 PASS（含 pin 与 stageTravel）
 ```
 
-**人工检查**：点 nav 链接平滑滚动；点左上角 MolCosmos 回顶部；导航高亮仍随滚动切换。
+**批次 3 必须注意的两点**
+
+1. `stageTravel` 公式用 `travel = trackWidth - windowWidth`，**不要再减 pad**（见 §五，`scrollWidth` 已含 padding）。
+2. pin 起点用 `'top 64px'`，不是 `'top top'`（实测 `'top top'` 会被 fixed nav 盖住 −59px）。
+3. `end:'max'` 的缓存问题已在批次 2 用 `refreshTriggersWhenSettled()` 处理；新建的 pin 若挂在动态高度的容器里，同样要在 `fonts.ready` 后 `refresh()`。
+
+**人工检查**：拖动 LabSection 滑块时光谱带分段跟着变；390 宽下 pin 数为 0。
 
 ---
 
