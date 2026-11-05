@@ -392,36 +392,67 @@ body {
     radial-gradient(900px 500px at 50% 120%, rgb(var(--accent-rgb) / 0.12), transparent 60%);
   animation: hero-drift 14s ease-in-out infinite alternate;
   /* Pointer parallax. The layer is 40% larger than the hero so it can shift a
-     long way without exposing an edge — at ±3.5% the movement measured about
-     8px, which nobody could see, so the amount is deliberately larger here. */
+     long way without exposing an edge.
+     The ease is deliberately short (0.18s) — the first version used 0.6s and
+     it read as lag rather than as weight, because the eye tracks a large soft
+     shape against the cursor. Short enough to feel attached, long enough to
+     take the stair-stepping out of the raw pointer samples. */
   transform: translate3d(
     calc((var(--mx, 0.5) - 0.5) * -14%),
     calc((var(--my, 0.5) - 0.5) * -10%),
     0
   );
-  transition: transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+  transition: transform 0.18s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
-/* A second, much softer bloom that lands where the pointer is. This is the
-   "the light notices you" layer: it is drawn on top of the drifting gradient
-   and fades in only while the pointer is inside the hero. */
-.hero__stage-glow::after {
-  content: '';
+/* The light that sits under the cursor itself.
+   
+   Three things were wrong with the first version, all measured:
+   1. it had `transition: left 0.2s` — the pointer value already arrives once
+      per frame, so the transition added a second lag on top and the light
+      trailed the cursor;
+   2. it was positioned with percentages against `.hero__stage-glow`, which is
+      `inset: -20%` and is itself translated for parallax, so the light never
+      sat where the cursor was;
+   3. at 0.1 alpha it was invisible on this background.
+   
+   So: it is now attached to `.hero__stage` (the untransformed full-bleed
+   layer), positioned in px from the same numbers the parallax uses, moved by
+   `transform` so it composites instead of re-laying out, and bright enough to
+   read. No position transition at all — the frame flush is the smoothing. */
+.hero__stage-viewport-light {
   position: absolute;
-  left: var(--mpx, 50%);
-  top: var(--mpy, 50%);
-  width: 46vmax;
-  height: 46vmax;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(
-    circle,
-    rgb(var(--accent-rgb) / 0.1) 0%,
-    rgb(var(--accent-3-rgb) / 0.06) 34%,
-    transparent 68%
+  left: 0;
+  top: 0;
+  width: 60vmax;
+  height: 60vmax;
+  border-radius: 50%;
+  transform: translate3d(
+    calc(var(--px, 0px) - 30vmax),
+    calc(var(--py, 0px) - 30vmax),
+    0
   );
-  opacity: calc(var(--m-on, 0) * 0.9);
-  transition: opacity 0.45s ease, left 0.2s ease-out, top 0.2s ease-out;
+  background: radial-gradient(
+    circle closest-side,
+    rgb(var(--accent-rgb) / 0.55) 0%,
+    rgb(255 238 200 / 0.34) 14%,
+    rgb(var(--accent-3-rgb) / 0.22) 34%,
+    rgb(var(--accent-rgb) / 0.06) 58%,
+    transparent 78%
+  );
+  opacity: var(--m-on, 0);
+  transition: opacity 0.25s ease;
   pointer-events: none;
+  will-change: transform;
+  /* Add light to what is underneath instead of covering it, so the dot
+     texture and the title stay visible through the bloom.
+     `closest-side` keeps the falloff inside the element box — `circle` alone
+     sized the gradient past the border-radius clip and left a visible straight
+     edge where the two disagreed. */
+  mix-blend-mode: screen;
+  /* Feather the very edge so no hard boundary survives at any zoom. */
+  -webkit-mask-image: radial-gradient(circle closest-side, black 82%, transparent 100%);
+  mask-image: radial-gradient(circle closest-side, black 82%, transparent 100%);
 }
 
 .hero__stage-dots {
@@ -2796,7 +2827,7 @@ html[lang='en'] .limits-list strong {
     transition: none;
   }
 
-  .hero__stage-glow::after {
+  .hero__stage-viewport-light {
     display: none;
   }
 

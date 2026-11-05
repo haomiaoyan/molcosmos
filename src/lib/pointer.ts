@@ -24,14 +24,26 @@ export interface PointerField {
   x: number
   /** 0..1 down the hero, 0.5 = centre. */
   y: number
+  /**
+   * Pointer position in viewport px (the same space as `clientX/clientY`).
+   *
+   * Deliberately NOT relative to the hero's content box: the cursor light is
+   * absolutely positioned inside `.hero__stage`, which is a full-bleed layer
+   * centred with `left: 50%` + `translateX(-50%)`. Hero-local numbers put the
+   * light 154px off (measured) because they exclude `.hero`'s side padding.
+   * Viewport coordinates are expressed against the stage itself, so both agree.
+   */
+  vx: number
+  vy: number
   /** True while the pointer is inside the hero. */
   inside: boolean
 }
 
-const REST: PointerField = { x: 0.5, y: 0.5, inside: false }
+const REST: PointerField = { x: 0.5, y: 0.5, vx: 0, vy: 0, inside: false }
 
 /**
- * Tracks the pointer inside `ref` and returns it as normalised coordinates.
+ * Tracks the pointer inside `ref` and returns it as normalised coordinates plus
+ * the raw viewport offset.
  *
  * The listener is attached to the element rather than the window so the hero
  * does not react to the pointer being somewhere else on a long page.
@@ -56,11 +68,17 @@ export function usePointerField<T extends HTMLElement>() {
     const onMove = (event: PointerEvent) => {
       const rect = el.getBoundingClientRect()
       if (rect.width === 0 || rect.height === 0) return
-      // Clamp: the pointer can sit outside the box while a child still catches
-      // the event, and an unclamped value would push the highlight off the edge.
+
+      // X: `.hero__stage` spans the viewport, so the stage's left edge is the
+      // viewport's left edge and `clientX` is already the right number.
+      // Y: the stage begins at the hero's top, so subtract that.
+      const within = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
+
       next = {
-        x: Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width)),
-        y: Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height)),
+        x: within((event.clientX - rect.left) / rect.width, 0, 1),
+        y: within((event.clientY - rect.top) / rect.height, 0, 1),
+        vx: within(event.clientX, 0, window.innerWidth),
+        vy: within(event.clientY - rect.top, 0, rect.height),
         inside: true,
       }
       // One update per frame: pointermove fires far more often than the page
@@ -99,6 +117,9 @@ export function pointerVars(field: PointerField): Record<string, string> {
     '--my': String(r(field.y)),
     '--mpx': `${r(field.x * 100)}%`,
     '--mpy': `${r(field.y * 100)}%`,
+    // Viewport X and stage-local Y, for the cursor light inside `.hero__stage`.
+    '--px': `${Math.round(field.vx)}px`,
+    '--py': `${Math.round(field.vy)}px`,
     '--m-on': field.inside ? '1' : '0',
   }
 }
