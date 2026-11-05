@@ -242,7 +242,7 @@ function CosmosApp({ initialUrl }: { initialUrl: UrlState }) {
       </section>
       <PipelineSection />
       <FunnelSection />
-      <CosmosStats />
+      <CosmosStats molecules={catalogue} />
       <CompareSection molecules={shortlist} />
       <LabSection weights={weights} onChange={setWeights} />
       <TimelineSection />

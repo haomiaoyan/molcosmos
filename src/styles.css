@@ -1270,15 +1270,9 @@ body {
 
 /* ---------- pipeline ---------- */
 
-.pipeline {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 14px;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  counter-reset: station;
-}
+/* `.pipeline` (the five-card grid) is gone with the stage that replaced it. The
+   cards themselves are unchanged — `.station` below is reused as-is; only their
+   size inside the track is new, and that lives with the stage rules. */
 
 .station {
   position: relative;
@@ -1332,6 +1326,154 @@ body {
   margin: 0;
   font-size: 0.88rem;
   color: var(--text-dim);
+}
+
+/* ---------- five stations as one horizontal stage ---------- */
+
+/* The pinned element is the stage itself, so it must NOT be translated for a
+   full-bleed background: ScrollTrigger owns this element's `transform` and
+   `position` while the pin is active, and a static `translateX(-50%)` here gets
+   overwritten the first time the trigger moves. The bleed therefore lives on a
+   pseudo-element, which the trigger never touches.
+   `calc(100vw - var(--sbw))` and not `100vw`: the raw viewport unit includes the
+   scrollbar and overhangs the right edge by its width, which is the horizontal
+   scrollbar this stage is not supposed to add. */
+.stage-pin {
+  position: relative;
+  /* 100vh here would hang the bottom 64px below the fold: the pin starts at
+     `top 64px` to clear the fixed nav, so only the viewport minus that offset is
+     left for the stage. `min-height` keeps a usable stage on short laptop
+     windows without changing the pin's start line. */
+  height: calc(100vh - 64px);
+  min-height: 380px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+  /* Deliberately no `overflow: hidden`: the full-bleed backdrop below is a
+     pseudo-element wider than this box, and clipping here would confine it to
+     the 1132px column. The only thing that must be clipped is the track, and
+     `.stage-window` does that on its own. `body { overflow-x: hidden }` already
+     stops the bleed from producing a scrollbar. */
+}
+
+.stage-pin::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 50%;
+  width: calc(100vw - var(--sbw));
+  transform: translateX(-50%);
+  background: radial-gradient(900px 340px at 50% 40%, rgb(var(--accent-4-rgb) / 0.07), transparent 70%);
+  pointer-events: none;
+}
+
+.stage-window {
+  position: relative;
+  /* Inside `.app` (max-width 1180, padding 0 24) this resolves to 1132 — the
+     number `useStageTravel` is calibrated against. */
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.station-track {
+  display: flex;
+  gap: 56px;
+  /* 24px gutters at both ends. Note that `padding-right` does NOT reach
+     `scrollWidth` once the track overflows (Chrome stops at the content box on
+     the right while counting the leading pad), so `scrollWidth` reads 2148 here
+     rather than the 2172 these numbers add up to. `StationStage` therefore
+     measures the track instead of trusting `scrollWidth` — see the comment on
+     its `measure()`. */
+  padding: 0 24px;
+  margin: 0;
+  list-style: none;
+  /* Promoted once rather than on every frame: this element is transformed on
+     every scroll tick for the length of the pin. */
+  will-change: transform;
+}
+
+/* The cards reuse `.station` wholesale — border, panel, blur, padding, hover.
+   Only the size in the row is new; a second card class would have duplicated
+   about fifty lines of the rule above. */
+.station-track > .station {
+  flex: 0 0 380px;
+}
+
+/* The current card keeps a lit border. Deliberately not an opacity dimming of
+   the others: under reduced motion the trigger never runs, so cards 2–5 would
+   stay dimmed for the whole visit with nothing to explain why. */
+.station-track > .station[data-active='true'] {
+  border-color: var(--line-strong);
+  box-shadow: 0 0 34px rgb(var(--accent-4-rgb) / 0.1);
+}
+
+.stage-counter {
+  position: relative;
+  margin: 0 auto;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  color: var(--text-mute);
+  font-variant-numeric: tabular-nums;
+}
+
+.stage-progress {
+  position: relative;
+  width: min(1180px, 100%);
+  height: 2px;
+  margin: 0 auto;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.stage-progress__fill {
+  height: 100%;
+  width: 0;
+  background: var(--accent-4);
+  transform-origin: left center;
+}
+
+/* Narrow screens: the same five cards, stacked, with no stage around them.
+   The trigger is never created below this width (see StationStage), so every
+   rule here is undoing the desktop layout rather than fighting a pin. */
+@media (max-width: 767px) {
+  .stage-pin {
+    height: auto;
+    min-height: 0;
+    display: block;
+    gap: 0;
+  }
+
+  /* The bleed is unnecessary once the stage stops travelling; leaving it in
+     would paint a full-width wash behind a plain list. */
+  .stage-pin::before {
+    display: none;
+  }
+
+  .stage-window {
+    width: 100%;
+    overflow: visible;
+  }
+
+  .station-track {
+    flex-direction: column;
+    gap: 18px;
+    padding: 0;
+    /* No transform is ever written at this width, and `will-change` on a
+       static list only costs the browser a layer. */
+    will-change: auto;
+  }
+
+  .station-track > .station {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  /* Both readouts describe a stage that does not exist here. */
+  .stage-counter,
+  .stage-progress {
+    display: none;
+  }
 }
 
 /* ---------- funnel ---------- */
@@ -1449,48 +1591,105 @@ body {
   }
 }
 
-/* ---------- stats / class cards ---------- */
+/* ---------- stats: the proportional spectrum strip ---------- */
 
-.stats-strip {
+/* The section used to be four equal-width cards. That was not a stylistic
+   choice but a false statement about the data: measured on the default weights
+   the split is 8.8% / 61.8% / 29.0% / 0.33%, so the two molecules in `far` were
+   drawn the same size as the 371 in `candidate`. One bar, widths from the
+   counts. */
+
+.spectrum {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 14px;
+  gap: 22px;
 }
 
-.class-card {
-  position: relative;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--panel);
-  padding: 26px 22px;
+.spectrum__bar {
+  display: flex;
+  width: 100%;
+  height: 26px;
+  border-radius: 999px;
   overflow: hidden;
-  transition: transform 0.2s;
+  border: 1px solid var(--line);
+  background: var(--scrim-soft);
 }
 
-.class-card:hover {
-  transform: translateY(-4px);
+.spectrum__seg {
+  /* `--w` is written by the component from `segmentWidths()`; the widths always
+     sum to 100, so the flex basis never needs to be corrected. `min-width: 0`
+     stops a 0.33% segment from being rounded away by the flex algorithm. */
+  width: var(--w);
+  min-width: 0;
+  flex: 0 0 auto;
+  transform-origin: left center;
+  /* Mount-only growth. An animation (rather than a width transition) so that
+     dragging the weight sliders snaps the strip to its new proportions instead
+     of easing for 600ms while the reader is still dragging. */
+  animation: spectrum-grow 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) both;
 }
 
-.class-card__glow {
-  position: absolute;
-  top: -34px;
-  left: 22px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  filter: blur(18px);
-  opacity: 0.8;
+/* 1px gaps, drawn as insets so they do not nibble the proportions: `flex` still
+   divides exactly 100% between the segments. */
+.spectrum__seg + .spectrum__seg {
+  box-shadow: inset 1px 0 0 var(--bg);
 }
 
-.class-card__title {
-  margin: 0 0 8px;
-  font-size: 1.05rem;
+@keyframes spectrum-grow {
+  from {
+    transform: scaleX(0);
+  }
 }
 
-.class-card__body {
+.spectrum__legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px 22px;
+  list-style: none;
   margin: 0;
-  font-size: 0.88rem;
+  padding: 0;
+}
+
+.spectrum__legend-item {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.spectrum__legend-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+}
+
+.spectrum__swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  /* Baseline alignment would sit the dot on the text baseline; the 1px lift
+     centres it against the cap height of the label instead. */
+  transform: translateY(1px);
+}
+
+.spectrum__count {
+  margin-left: auto;
   color: var(--text-dim);
+  font-size: 0.86rem;
+  /* Tabular figures so the four counts line up in a column even though
+     371/174/2 have different digit counts. */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Kept from the old cards (plan Q2): removing them would drop information that
+   the "no information lost under reduced motion" constraint says must survive a
+   redesign. */
+.spectrum__note {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: var(--text-dim);
+  text-wrap: pretty;
 }
 
 /* ---------- weight sandbox (#lab) ---------- */
@@ -2822,7 +3021,6 @@ html[lang='en'] .limits-list strong {
   /* Transitions that shift or scale an element; colour and border
      transitions stay so hover feedback still reads as feedback. */
   .btn,
-  .class-card,
   .station,
   .topnav a,
   .shortlist__row,
@@ -2830,6 +3028,13 @@ html[lang='en'] .limits-list strong {
   .compare__chip,
   .timeline__card {
     transition-property: color, background-color, border-color, box-shadow, opacity;
+  }
+
+  /* The strip's segments grow from zero on mount. Reduced motion renders them
+     at their final width on the first paint instead — the proportions are the
+     information here, and they must not depend on an animation having run. */
+  .spectrum__seg {
+    animation: none;
   }
 
   /* The pointer parallax is motion, so it goes: the glow keeps its drift-free

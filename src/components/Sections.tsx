@@ -1,6 +1,8 @@
 import { useMemo, type CSSProperties } from 'react'
-import { CLASS_COLORS, CLASS_LABEL_KEYS, type MoleculeClass } from '../lib/galaxy'
 import { useI18n } from '../lib/i18n'
+import type { Molecule } from '../lib/molecule'
+import { SpectrumStrip } from './SpectrumStrip'
+import { StationStage, type Station } from './StationStage'
 
 /**
  * The five stations of the AI drug-design pipeline.
@@ -8,13 +10,13 @@ import { useI18n } from '../lib/i18n'
  * Only the accent colour and the station number live here; the copy comes from
  * i18n so the whole section switches language in place.
  */
-const PIPELINE = [
+const PIPELINE: readonly Station[] = [
   { step: '01', key: 's1', accent: '#6ea8fe' },
   { step: '02', key: 's2', accent: '#37e2c8' },
   { step: '03', key: 's3', accent: '#b389ff' },
   { step: '04', key: 's4', accent: '#ffd47e' },
   { step: '05', key: 's5', accent: '#ff6b7a' },
-] as const
+]
 
 export function PipelineSection() {
   const { t } = useI18n()
@@ -28,25 +30,9 @@ export function PipelineSection() {
         </h2>
         <p className="section__lead">{t('pipeline.lead')}</p>
       </header>
-      <ol className="pipeline">
-        {PIPELINE.map((station) => (
-          <li key={station.step} className="station">
-            <span
-              className="station__glow"
-              style={{ background: `radial-gradient(circle, ${station.accent}33, transparent 70%)` }}
-              aria-hidden="true"
-            />
-            <div className="station__head">
-              <span className="station__step mono">{station.step}</span>
-              <span className="station__ai-tag" style={{ color: station.accent, borderColor: `${station.accent}55` }}>
-                {t(`pipeline.${station.key}.ai` as const)}
-              </span>
-            </div>
-            <h3 className="station__title">{t(`pipeline.${station.key}.title` as const)}</h3>
-            <p className="station__body">{t(`pipeline.${station.key}.body` as const)}</p>
-          </li>
-        ))}
-      </ol>
+      {/* The stage replaces the five-card grid; the head above stays put so the
+          chapter still announces itself before it starts moving. */}
+      <StationStage stations={PIPELINE} />
     </section>
   )
 }
@@ -101,17 +87,16 @@ export function FunnelSection() {
   )
 }
 
-/** Class distribution of the generated universe. */
-export function CosmosStats() {
+/**
+ * Class distribution of the generated universe.
+ *
+ * `molecules` is the re-scored catalogue, not the fixed 600: dragging the weight
+ * sliders moves molecules between classes, and the census has to follow them.
+ * That is also why nothing here reads `universe()` directly — the numbers on
+ * screen would stop matching the galaxy above.
+ */
+export function CosmosStats({ molecules }: { molecules: readonly Molecule[] }) {
   const { t } = useI18n()
-  const dist = useMemo(
-    () =>
-      (['goldilocks', 'candidate', 'lead', 'far'] as const).map((cls) => ({
-        cls,
-        color: CLASS_COLORS[cls],
-      })),
-    [],
-  )
   return (
     <section className="section" id="stats" aria-labelledby="stats-title">
       <header className="section__head">
@@ -122,24 +107,7 @@ export function CosmosStats() {
         </h2>
         <p className="section__lead">{t('stats.lead')}</p>
       </header>
-      <div className="stats-strip">
-        {dist.map((entry) => (
-          <ClassCard key={entry.cls} cls={entry.cls} color={entry.color} />
-        ))}
-      </div>
+      <SpectrumStrip molecules={molecules} />
     </section>
-  )
-}
-
-function ClassCard({ cls, color }: { cls: MoleculeClass; color: string }) {
-  const { t } = useI18n()
-  return (
-    <article className={`class-card class-card--${cls}`}>
-      <span className="class-card__glow" style={{ background: color }} aria-hidden="true" />
-      <h3 className="class-card__title" style={{ color }}>
-        {t(CLASS_LABEL_KEYS[cls])}
-      </h3>
-      <p className="class-card__body">{t(`stats.${cls}.body` as const)}</p>
-    </article>
   )
 }

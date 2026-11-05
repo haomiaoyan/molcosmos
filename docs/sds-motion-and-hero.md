@@ -435,6 +435,25 @@ fillPercent  = progress * 100
 > 2172      - 1180 =  992   ← v7 实际代码 track.scrollWidth - win.clientWidth
 > ```
 
+> **v1.2 修正（批次 3 实测，推翻上一段的一半）**：`scrollWidth` **并不**等于 2172。
+> 元素溢出时 Chrome 只计入**前导** padding，尾部 padding 被丢弃：
+>
+> ```
+> 实测 1440 / 1920 / 2560 三档，数值完全相同：
+>   track.scrollWidth = 2148        （不是 2172）
+>   卡片 5×380 = 1900 + gap 4×56 = 224 + padding 48 = 2172   ← 合成值
+>
+>   travel(用 scrollWidth) = 2148 - 1132 = 1016   ← 差 24px
+>   travel(用合成值)       = 2172 - 1132 = 1040   ← SDS 声称的数
+> ```
+>
+> **实现必须自己合成宽度**：`Σ card.offsetWidth + gap×(n−1) + paddingLeft + paddingRight`。
+> 不能用 `scrollWidth`；也不能用 `getBoundingClientRect()`——track 上有 `translateX`，
+> refresh 时拿到的可能是旧值。`offsetWidth` 不含 transform 与 margin，任意滚动位置都稳定。
+>
+> **24px 的差异是有意的**：pin 结束时第 5 张卡右侧留 **24px 右边距**（实测 `gutter = +24`），
+> 不贴齐窗口。两个数都自洽，选哪个是审美；本实现按 SDS 取 **1040**。
+
 **为什么 `travel` 用 `windowWidth` 而不是 `innerWidth`**：实测 1440/1920/2560 下 `travel` 必须恒定。用 `innerWidth` 会让宽屏的 travel 变小甚至为 0（v1 的 bug）。
 
 **`windowWidth` 取值取决于 `.stage-pin` 挂在哪**（实测，三种挂法）：
