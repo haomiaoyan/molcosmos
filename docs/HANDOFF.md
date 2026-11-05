@@ -44,6 +44,7 @@
 2. `docs/sds-motion-and-hero.md` —— **SDS v1.1，实施的唯一依据**
 3. `docs/plan-hero-rebuild.md` —— 计划 v3，决策表 D1-D11
 4. `docs/sds-measurements.md` —— 9 处实测校正的来源
+5. `docs/ui-effects-source.md` —— **用户给的 uiverse CSS 原文**，做 UI 效果前必读
 
 ---
 
@@ -243,15 +244,24 @@ npm run build     → 失败（build 含 tsc）
 | 不采用 | ThreeUI（iframe+CDN）、React Bits（非 npm 包） |
 | 鼠标互动 | 背景 + 标题都要，但**文字本身不能动** |
 
-### 待做的 UI 效果（用户发过截图 + CSS）
+### 待做的 UI 效果
 
-| 效果 | 计划用在哪 |
-|---|---|
-| 霓虹描边卡片（绿蓝渐变光边） | 五关卡（批次 3） |
-| 渐变边框卡片（`#00ff75→#3700ff`） | 宇宙普查（批次 3） |
-| 社交图标 hover 填充（从下往上） | 导航 GitHub 按钮 |
-| 日/月主题切换器 | 改造为深空↔米白切换（批次 4） |
-| 滑块 glider（`--main-color` 光晕） | **已用于导航** ✅ |
+**完整 CSS 原文在 [`docs/ui-effects-source.md`](ui-effects-source.md)** —— 用户发来的 5 段 uiverse 代码逐字保存，含每段的关键点和本项目适配改法。**做之前先读那份**，别只看这张表。
+
+| # | 效果 | 计划用在哪 | 状态 |
+|---|---|---|---|
+| 1 | 社交图标 hover 填充（`height 0→100%` 从下往上）+ tooltip 上飘 | 导航 GitHub 按钮 | ⬜ |
+| 2 | 日/月主题切换器（17 个 `box-shadow` 堆云朵） | 批次 4 改为深空↔米白 | ⬜ |
+| 3 | 渐变边框卡片（外层渐变 + 内层缩放松开） | 宇宙普查（批次 3） | ⬜ |
+| 4 | 卡片 hover 放大 + `:not(:hover)` 模糊其余 | 宇宙普查（批次 3） | ⬜ |
+| 5 | 竖向滑块 glider（过冲回弹 + `blur` 光晕） | **已用于导航** `.topnav__glider` | ✅ |
+
+**三条通用约束**（详见 `ui-effects-source.md` 末节）：
+
+- 硬编码颜色 → 换项目 CSS 变量
+- 固定像素 → 改 `clamp()`，中英文切换不溢出
+- `:nth-of-type` 硬编码索引 → 改 JS 实时测量
+- **导航栏只有 56px 高**，任何加进导航的效果先量这个
 
 ---
 

@@ -1,6 +1,14 @@
 interface Props {
   /** Dot texture: the light themes read better with it than with stars. */
   dotted?: boolean
+  /**
+   * The stage element itself, for `usePointerField`'s surface.
+   *
+   * This layer is the cursor light's real boundary — it is full-bleed, while
+   * `.hero` is capped at 1180px by `.app` — so the hook needs a handle on it
+   * to keep the light alive out to the screen edges.
+   */
+  stageRef?: React.RefObject<HTMLDivElement>
 }
 
 /**
@@ -16,9 +24,13 @@ interface Props {
  * child positioned in stage coordinates would be carried along with it and
  * would never sit under the pointer (measured 146px of error).
  */
-export function HeroStage({ dotted = true }: Props) {
+export function HeroStage({ dotted = true, stageRef }: Props) {
   return (
-    <div className={`hero__stage${dotted ? ' hero__stage--dotted' : ''}`} aria-hidden="true">
+    <div
+      className={`hero__stage${dotted ? ' hero__stage--dotted' : ''}`}
+      ref={stageRef}
+      aria-hidden="true"
+    >
       <div className="hero__stage-glow" />
       <div className="hero__stage-dots" />
       <div className="hero__stage-stars" />

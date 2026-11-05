@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { useI18n } from '../lib/i18n'
 import { pointerVars, usePointerField } from '../lib/pointer'
 import { HeroMolecule } from './HeroMolecule'
@@ -12,11 +13,17 @@ export function Hero({ onStart, onExplore }: Props) {
   const { t } = useI18n()
   // The backdrop leans towards the pointer; the title picks up a highlight
   // that follows it. Neither moves the text itself — see lib/pointer.ts.
-  const { ref, field } = usePointerField<HTMLElement>()
+  //
+  // The stage is handed over as a second, wider frame for the cursor light:
+  // `.hero` is capped at 1180px by `.app`, so measuring the light against it
+  // made the pointer die 130px short of each edge at 1440 (measured
+  // `--m-on: 0` at clientX 100 and 1420).
+  const stageRef = useRef<HTMLDivElement | null>(null)
+  const { ref, field } = usePointerField<HTMLElement>(stageRef)
 
   return (
     <section className="hero" id="top" ref={ref} style={pointerVars(field)}>
-      <HeroStage />
+      <HeroStage stageRef={stageRef} />
       <div className="hero__inner">
         <div className="hero__molecule-slot">
           <HeroMolecule />

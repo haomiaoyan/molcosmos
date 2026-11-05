@@ -428,12 +428,21 @@ body {
   position: absolute;
   left: 0;
   top: 0;
-  width: 60vmax;
-  height: 60vmax;
+  /* `vmin`, not `vmax`: at 390x844 the old `60vmax` gave a 506px element on a
+     390px-wide screen (130% of the width, more than the viewport). `vmin` takes
+     the short side, so a phone gets a light that fits, and the 620px cap stops
+     a 2560-wide monitor from scaling it forever (was 1536px there). */
+  width: min(52vmin, 620px);
+  height: min(52vmin, 620px);
   border-radius: 50%;
+  /* Half the width above, written out as a constant instead of
+     `calc(min(52vmin, 620px) / 2)`: dividing a custom-property-derived length
+     is evaluated at different times across engines, and a half-width that
+     disagrees with `width` by even a few px parks the bloom beside the cursor.
+     Measured error with the two out of sync: 146px. */
   transform: translate3d(
-    calc(var(--px, 0px) - 30vmax),
-    calc(var(--py, 0px) - 30vmax),
+    calc(var(--px, 0px) - min(26vmin, 310px)),
+    calc(var(--py, 0px) - min(26vmin, 310px)),
     0
   );
   background: radial-gradient(
@@ -2846,5 +2855,22 @@ html[lang='en'] .limits-list strong {
      the position is still information, only the motion is removed. */
   .topnav__glider {
     transition: none;
+  }
+}
+
+/* ---------- touch --------------------------------------------------
+   The follow-light is driven by `pointermove`, and a touch screen only fires
+   that between `touchstart` and `touchend`. A tap would therefore drop the
+   light wherever the finger happened to land and leave it burning there until
+   the next tap, so it reads as a flicker rather than as a highlight. Pure
+   touch has no pointer to follow, so the layer is simply not shown; the
+   parallax and the static glow above it still render.
+   Both queries, because a touch laptop reports `pointer: fine` with
+   `hover: none` while a stylus tablet can be the other way round.
+   -------------------------------------------------------------------- */
+
+@media (hover: none), (pointer: coarse) {
+  .hero__stage-viewport-light {
+    display: none;
   }
 }
