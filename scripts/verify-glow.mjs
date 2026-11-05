@@ -108,11 +108,19 @@ async function evaluate(expression) {
   return reply.result?.result?.value
 }
 
-async function loadAt(width, height, { touch = false, reduceMotion = false } = {}) {
+/**
+ * Reloads, and waits for the light element to exist.
+ *
+ * `setTouchEmulationEnabled` is deliberately absent here: CDP does not undo it.
+ * Switching it back to `false` leaves `(hover: hover)` at `false` for the rest
+ * of the session, which made every later viewport report the light as hidden —
+ * a false FAIL, and before that a false PASS because a hidden element measures
+ * 0px. Touch is therefore a separate browser launch, below.
+ */
+async function loadAt(width, height, { reduceMotion = false } = {}) {
   await send('Emulation.setDeviceMetricsOverride', {
-    width, height, deviceScaleFactor: 1, mobile: touch,
+    width, height, deviceScaleFactor: 1, mobile: false,
   })
-  await send('Emulation.setTouchEmulationEnabled', { enabled: touch, maxTouchPoints: touch ? 5 : 0 })
   await send('Emulation.setEmulatedMedia', {
     features: [{ name: 'prefers-reduced-motion', value: reduceMotion ? 'reduce' : 'no-preference' }],
   })
@@ -159,20 +167,35 @@ await send('Runtime.enable')
 
 /* ---------- G1/G2/G3: the light is small enough at every viewport ---------- */
 
-for (const [w, h, label] of [[1440, 900, '1440x900'], [390, 844, '390x844'], [2560, 1440, '2560x1440']]) {
-  await loadAt(w, h, { touch: w === 390 })
+// 390 is a touch viewport on purpose: Q4 hides the light there, so its geometry
+// is checked at a *desktop* narrow width instead. Measuring a `display: none`
+// element returns a zero-sized rect, and `0 <= cap` would pass without proving
+// anything — the earlier version of this script did exactly that.
+for (const [w, h, label] of [
+  [1440, 900, '1440x900'],
+  [390, 844, '390x844 (narrow, non-touch)'],
+  [2560, 1440, '2560x1440'],
+]) {
+  await loadAt(w, h)
   await moveTo(Math.round(w / 2), Math.round(h / 2))
   const box = await evaluate(lightBox)
+
+  // Every geometry assertion first requires that the light is actually painted;
+  // otherwise a hidden element passes every size cap by being zero.
+  check(
+    `G0. light is painted at ${label}`,
+    box.display !== 'none' && box.w > 0,
+    `display ${box.display}, width ${box.w}px`,
+  )
+
   if (label === '1440x900') {
-    check('G1. light edge <= 500px at 1440', box.w <= 500, `width ${box.w}px`)
+    check('G1. light edge <= 500px at 1440', box.w > 0 && box.w <= 500, `width ${box.w}px`)
   }
-  if (label === '390x844') {
-    check('G2. light edge <= 0.8 * viewport at 390', box.w <= w * 0.8, `width ${box.w}px vs ${(w * 0.8).toFixed(0)}px cap`)
-    // Touch devices are meant to hide it entirely (Q4), so also assert that.
-    check('G8. light is hidden on a touch viewport', box.display === 'none', `display ${box.display}`)
+  if (label.startsWith('390x844')) {
+    check('G2. light edge <= 0.8 * viewport at 390', box.w > 0 && box.w <= w * 0.8, `width ${box.w}px vs ${(w * 0.8).toFixed(0)}px cap`)
   }
   if (label === '2560x1440') {
-    check('G3. light is capped at 620px on a wide viewport', box.w <= 620, `width ${box.w}px`)
+    check('G3. light is capped at 620px on a wide viewport', box.w > 0 && box.w <= 620, `width ${box.w}px`)
   }
 }
 
@@ -187,11 +210,11 @@ await loadAt(1440, 900)
     samples.push({ x, field })
   }
 
-  const allOn = samples.every((s) => s.field.mOn === '1')
+  const allOn = samples.every((s) => s.field.mOn === '1' && s.field.opacity > 0.9)
   check(
     'G4. light stays on at both screen edges',
     allOn,
-    samples.map((s) => `x=${s.x} --m-on=${s.field.mOn}`).join(', '),
+    samples.map((s) => `x=${s.x} --m-on=${s.field.mOn} opacity=${s.field.opacity}`).join(', '),
   )
 
   const worst = Math.max(...samples.map((s) => Math.abs(parseFloat(s.field.px) - s.x)))
@@ -204,7 +227,8 @@ await loadAt(1440, 900)
   for (const x of [20, 720, 1420]) {
     await moveTo(x, 400)
     const box = await evaluate(lightBox)
-    centreErrors.push(Math.abs(box.cx - x))
+    if (box.display === 'none' || box.w === 0) centreErrors.push(Number.POSITIVE_INFINITY)
+    else centreErrors.push(Math.abs(box.cx - x))
   }
   const worstCentre = Math.max(...centreErrors)
   check('G5b. light centre sits on the cursor', worstCentre <= 8, `max offset ${worstCentre.toFixed(1)}px`)
@@ -238,6 +262,91 @@ await loadAt(1440, 900, { reduceMotion: true })
   await moveTo(720, 400)
   const box = await evaluate(lightBox)
   check('G7. light is hidden under reduced motion', box.display === 'none', `display ${box.display}`)
+}
+
+/* ---------- G8: touch hides the light, in its own browser ---------- */
+
+// A separate launch, because touch emulation cannot be switched back off in a
+// live session (see loadAt). Spawning costs a second and keeps the other eight
+// assertions honest.
+{
+  const touchPort = DEBUG_PORT + 1
+  const touchChrome = spawn(findChrome(), [
+    '--headless=new',
+    `--remote-debugging-port=${touchPort}`,
+    `--user-data-dir=${path.resolve('.tmp-verify-glow-touch')}`,
+    '--window-size=390,844',
+    '--no-first-run',
+    '--disable-extensions',
+    'about:blank',
+  ], { stdio: 'ignore' })
+
+  let touchWs = null
+  try {
+    let page = null
+    for (let attempt = 0; attempt < 60 && !page; attempt += 1) {
+      await sleep(300)
+      try {
+        const list = await (await fetch(`http://127.0.0.1:${touchPort}/json/list`)).json()
+        page = list.find((t) => t.type === 'page')
+      } catch {
+        /* not listening yet */
+      }
+    }
+    if (!page) throw new Error('touch browser never came up')
+
+    touchWs = new WebSocket(page.webSocketDebuggerUrl, { maxPayload: 64 * 1024 * 1024 })
+    await new Promise((resolve, reject) => {
+      touchWs.once('open', resolve)
+      touchWs.once('error', reject)
+    })
+
+    let touchId = 0
+    const touchPending = new Map()
+    touchWs.on('message', (raw) => {
+      const message = JSON.parse(raw.toString())
+      if (message.id && touchPending.has(message.id)) {
+        touchPending.get(message.id)(message)
+        touchPending.delete(message.id)
+      }
+    })
+    const touchSend = (method, params = {}) =>
+      new Promise((resolve) => {
+        const id = (touchId += 1)
+        touchPending.set(id, resolve)
+        touchWs.send(JSON.stringify({ id, method, params }))
+      })
+
+    await touchSend('Page.enable')
+    await touchSend('Runtime.enable')
+    await touchSend('Emulation.setDeviceMetricsOverride', {
+      width: 390, height: 844, deviceScaleFactor: 1, mobile: true,
+    })
+    await touchSend('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
+    await touchSend('Page.navigate', { url: targetUrl })
+    await sleep(2600)
+
+    const reply = await touchSend('Runtime.evaluate', {
+      expression: `(() => {
+        const el = document.querySelector('.hero__stage-viewport-light')
+        return {
+          display: el ? getComputedStyle(el).display : 'missing',
+          coarse: window.matchMedia('(pointer: coarse)').matches,
+          anyHover: window.matchMedia('(any-hover: hover)').matches,
+        }
+      })()`,
+      returnByValue: true,
+    })
+    const touchState = reply.result?.result?.value ?? {}
+    check(
+      'G8. light is hidden on a touch viewport',
+      touchState.display === 'none',
+      `display ${touchState.display}, pointer:coarse ${touchState.coarse}, any-hover:hover ${touchState.anyHover}`,
+    )
+  } finally {
+    touchWs?.close()
+    touchChrome.kill()
+  }
 }
 
 ws.close()
