@@ -2,7 +2,7 @@
 
 > **新会话从这里读起。**
 > 最后更新：2026-11-05 15:44
-> 当前状态：**SDS v1.1 定稿 · 批次 1 / 1.5 / 1.6 / 1.7 / 2 已实施 · 光晕修复已实施 · 下一步是批次 3**
+> 当前状态：**SDS v1.2 · 批次 1 / 1.5 / 1.6 / 1.7 / 2 / 3 已实施 · 光晕修复已实施 · 下一步是批次 4**
 
 ---
 
@@ -29,6 +29,8 @@
 | `5e95936` | — | **批次 1.7** 光晕同步修复（延迟/位置/亮度） |
 | `49e696a` | `v2.0-p2` | **批次 2** GSAP 系统：ScrollToPlugin 滚动、进度条 ScrollTrigger、121 测试 |
 | `8348fd1` | — | 光晕修复（尺寸+死区）+ uiverse 素材文档 |
+| `f25b9e2` | — | **批次 3a** 五关卡横向长舞台 + 宇宙普查光谱带 |
+| `56f6696` | `v2.0-p3` | **批次 3b** 时间轴单轴 + 方法段去卡片 |
 
 ### 光晕修复（独立于批次，2026-11-05）
 
@@ -290,31 +292,61 @@ npm run build     → 失败（build 含 tsc）
 
 ---
 
-## 九、下一步（批次 3）
+## 九、下一步（批次 4：双主题）
 
-按 SDS §5 批次 3：
+按 SDS §5 批次 4。
 
 **内容**
-- `src/lib/useStageTravel.ts`（`stageTravel` / `stageSpan` / `stageFrame`）+ 单测
-- `StationStage.tsx`、`SpectrumStrip.tsx`、`TimelineAxis.tsx` 新建
-- `Sections.tsx` 换用前两个
-- `TimelineSection.tsx` 换用第三个
-- `MethodSection` 去卡片
-- `styles.css` 新增规则族
+- `theme.ts` 5→2 + `colorScheme` 动态
+- `themes/paper.ts` 新建（暖纸米白 `#ece7dc` + 朱砂 `#c2410c`）
+- `urlState.ts` 旧 id 映射 + 新测试
+- `i18n.tsx` 删 3 条 `theme.*`、加 1 条 `theme.paper`
+- `TopnavTools.tsx` 两处 `t(labelKey)` 修类型
+- `styles.css` 10 处 literal 变量化 + 新增 4 个变量
+- `index.html` theme-color 交给 JS
+- `README.md` 三处同步
 
 **验收**
 ```bash
 npx tsc --noEmit && npx vitest run && npm run build
-node scripts/verify.mjs --url http://localhost:XXXX/   # 10 条全 PASS（含 pin 与 stageTravel）
+node scripts/verify.mjs        # 16/16
+node scripts/verify-glow.mjs   # 12/12
+node scripts/verify-stage.mjs  # 15/15
 ```
 
-**批次 3 必须注意的两点**
+> **本批必须重跑批次 1-3 的全部视觉验收**：主题变了，之前的截图全部失效。
 
-1. `stageTravel` 公式用 `travel = trackWidth - windowWidth`，**不要再减 pad**（见 §五，`scrollWidth` 已含 padding）。
-2. pin 起点用 `'top 64px'`，不是 `'top top'`（实测 `'top top'` 会被 fixed nav 盖住 −59px）。
-3. `end:'max'` 的缓存问题已在批次 2 用 `refreshTriggersWhenSettled()` 处理；新建的 pin 若挂在动态高度的容器里，同样要在 `fonts.ready` 后 `refresh()`。
+**砍主题的真实代价（已实测，不要重新估）**：在临时副本实做过，`npx tsc --noEmit`
+报 **14 个错误**（`theme.ts` 8、`TopnavTools.tsx` 2、`urlState.test.ts` 3）。
+`npx vitest run` 仍 107/107 全绿——**esbuild 剥类型，拦不住**。
+**验收必须用 `npm run build`，不能只看 vitest。**
 
-**人工检查**：拖动 LabSection 滑块时光谱带分段跟着变；390 宽下 pin 数为 0。
+---
+
+## 九之二、批次 3 已完成（留档）
+
+| 交付物 | 文件 | 验收 |
+|---|---|---|
+| 长舞台位移计算 | `lib/useStageTravel.ts` + 12 测试 | travel 1040，frame clamp 正确 |
+| 五关卡横向舞台 | `components/StationStage.tsx` | window 1132 / card 380 / x 走到 −1040 |
+| 宇宙普查光谱带 | `components/SpectrumStrip.tsx` + 9 测试 | 8.833/61.833/29.000/0.333，归一化后 sum 100 |
+| 时间轴单轴 | `components/TimelineAxis.tsx` + 7 测试 | 线 27..717.1 对 marker 27..717.1 |
+| 方法段去卡片 | `Sections2.tsx` | 编号行，文案未改 |
+
+**批次 3 的实测结论（不要再踩）**
+
+1. **`scrollWidth` 不含尾部 padding**。溢出时 Chrome 只计前导 padding：
+   `scrollWidth = 2148`，而真实宽 `2172`（5×380 + 4×56 + 48）。
+   → travel 差 24px。**必须自己合成宽度**：`Σ card.offsetWidth + gap×(n−1) + padding`。
+   （已写回 SDS §4.5 的 v1.2 修正）
+2. **SDS §4.10 的"轴高 = 节点数 × 最小高"是错的**。节点高由正文长度决定，
+   照算会让轴停在最后一张卡里。→ 取首尾 marker 中心。
+3. **测 pin 的起点要用 `.pin-spacer` 的文档位置**，不是 pin 元素的当前位置——
+   后者在 pin 生效后是被钉住的位置，拿它当起点会得出"行程只有 836px"的错误结论。
+4. **CDP 的 `setTouchEmulationEnabled` 开了关不掉**，会污染后续所有视口。
+   触摸断言必须单独起浏览器进程（`verify-glow.mjs` 已按此实现）。
+5. **React 受控 input 不能直接赋 `.value`**，要走原生 setter 再派发事件，
+   否则 onChange 不触发，会误判"交互断了"。
 
 ---
 
