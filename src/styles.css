@@ -2219,64 +2219,110 @@ body {
 
 /* ---------- timeline (#timeline) ---------- */
 
+/* The old rail lived *inside* each node and stopped 18px above the next one, so
+   the page drew five 1px ticks that never touched: measured, the gaps between
+   them totalled more than the lines themselves. It did not read as a timeline,
+   it read as five cards with a stray mark in the margin. One line behind the
+   whole list does, and it is also the only shape that can visibly *grow* — the
+   growth is the point of the section (1996 → 2025).
+
+   `TimelineAxis` measures where the first and last markers actually sit and
+   writes this line's `top`/`height`; it does not just span the list, because a
+   list that spans its own box runs ~110px past the final dot (the height of that
+   node's own text) and reads as a timeline that continues past 2025. */
+.timeline-axis {
+  position: relative;
+  /* Centre of the marker column. Both breakpoints below keep it at half their
+     gutter, so the line and the dots cannot drift apart. */
+  --axis-x: 7px;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.timeline-axis__line {
+  position: absolute;
+  top: 0;
+  /* 2px wide, centred on the marker column. Left rather than centred on the
+     element: `translateX(-50%)` would be overwritten the moment the component
+     writes `scaleY` into `transform`. */
+  left: calc(var(--axis-x) - 1px);
+  width: 2px;
+  /* Fallback span, replaced with an exact `top`/`height` pair by `TimelineAxis`
+     as soon as it can measure the first and last markers. Deliberately *not*
+     `height: 0`: if the script never runs, a line that covers the list is the
+     honest degradation, while a zero-height one is the axis silently vanishing.
+     `height` alone, with no `bottom`, so the written px value cannot end up
+     over-constrained against a second edge. */
+  height: 100%;
+  border-radius: 2px;
+  /* Warm at the 1996 end, cool at the 2025 end: the axis carries the direction
+     even before it has grown, which is the one thing a still frame of this
+     section has to say for itself. */
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--accent-rgb) / 0.55),
+    var(--line-strong) 26%,
+    var(--line-strong) 74%,
+    rgb(var(--accent-2-rgb) / 0.55)
+  );
+  /* Grows downward from the first marker; `TimelineAxis` writes `scaleY(0→1)`. */
+  transform-origin: top center;
+  pointer-events: none;
+}
+
 .timeline {
   list-style: none;
-  margin: 0 auto;
+  margin: 0;
   padding: 0;
-  max-width: 860px;
   position: relative;
 }
 
 .timeline__item {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  gap: 0 18px;
-  position: relative;
-  padding-bottom: 18px;
+  /* The gutter is the marker's own width, so `--axis-x` is exactly its centre
+     and the dots sit on the line with no per-breakpoint nudge. */
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 0 22px;
+  padding-bottom: 26px;
 }
 
 .timeline__item:last-child {
   padding-bottom: 0;
 }
 
-.timeline__rail {
-  position: relative;
-  display: flex;
-  justify-content: center;
-}
-
-/* The connecting line is drawn by the rail, not by the card, so cards of
-   different heights still join cleanly. */
-.timeline__rail::before {
-  content: '';
-  position: absolute;
-  top: 20px;
-  bottom: -18px;
-  width: 1px;
-  background: linear-gradient(
-    to bottom,
-    rgb(var(--accent-rgb) / 0.45),
-    var(--line-strong)
-  );
-}
-
-.timeline__item:last-child .timeline__rail::before {
-  display: none;
-}
-
-.timeline__dot {
-  position: relative;
-  width: 11px;
-  height: 11px;
-  margin-top: 17px;
+/* The marker is centred in the gutter, so its centre is always half the column
+   width — which is exactly what `--axis-x` on `.timeline-axis` says. Centring
+   (rather than a `margin-left` nudge) is what lets the 16px foundation ring
+   share the line with the 14px dots without shifting it under itself. */
+.timeline__marker {
+  display: block;
+  justify-self: center;
+  width: 14px;
+  height: 14px;
+  /* 19px = the card's 16px top padding plus half of the ~21px year line, minus
+     half this dot. It puts the marker on the year's optical centre. */
+  margin-top: 19px;
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 0 4px rgb(var(--accent-rgb) / 0.12);
 }
 
-.timeline__item--foundation .timeline__dot {
+/* The two foundational results are marked by *shape*, not only by hue: 1996 and
+   1997 are the work the rest of the field stands on, and a colour difference
+   alone is invisible to a red-green colour-blind reader. This one is a 16px
+   ring — larger than the solid 14px dots below it, and hollow — while keeping
+   its centre on the same 7px as every other marker. */
+.timeline__item--foundation .timeline__marker {
+  width: 16px;
+  height: 16px;
   background: var(--accent-2);
-  box-shadow: 0 0 0 4px rgb(var(--accent-2-rgb) / 0.12);
+  box-shadow:
+    0 0 0 4px rgb(var(--accent-2-rgb) / 0.14),
+    inset 0 0 0 3px var(--bg);
+}
+
+.timeline__item--foundation .timeline__card {
+  border-color: rgb(var(--accent-2-rgb) / 0.3);
 }
 
 .timeline__card {
@@ -2342,16 +2388,36 @@ body {
   text-wrap: pretty;
 }
 
-@media (max-width: 640px) {
-  .timeline__item {
-    grid-template-columns: 24px minmax(0, 1fr);
-    gap: 0 12px;
+/* Narrow screens: the axis moves into a 12px left gutter and the nodes read
+   from a fixed left edge instead of from a moving line. `TimelineAxis` creates
+   no trigger below 768px, so nothing here is fighting an animation — this is
+   the layout's only state at that width, not the end of one. */
+@media (max-width: 767px) {
+  .timeline-axis {
+    /* The SDS asks for the axis "in a 12px left gutter" on a phone. 12 is the
+       *centre* of the 24px marker column, so the line and every dot share one
+       x-coordinate and neither depends on the other's width. */
+    --axis-x: 12px;
   }
 
-  .timeline__dot {
-    width: 9px;
-    height: 9px;
-    margin-top: 16px;
+  .timeline__item {
+    grid-template-columns: 24px minmax(0, 1fr);
+    gap: 0 14px;
+    padding-bottom: 20px;
+  }
+
+  .timeline__marker {
+    width: 11px;
+    height: 11px;
+    margin-top: 17px;
+  }
+
+  .timeline__item--foundation .timeline__marker {
+    width: 13px;
+    height: 13px;
+    box-shadow:
+      0 0 0 3px rgb(var(--accent-2-rgb) / 0.14),
+      inset 0 0 0 2px var(--bg);
   }
 
   .timeline__card {
@@ -2369,29 +2435,56 @@ body {
 
 /* ---------- method & limits ---------- */
 
-.method-grid {
+/* Numbered rows, not a card grid (plan Q3, option a).
+   The chapter used to be the fourth four-up card grid on the page; the card
+   border was doing no work that the row's separator does not do, and it made
+   the four steps read as four independent options when they are one sequence.
+   The numbers say "sequence" without spending a card on it. */
+.method-list {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: 760px;
+  /* A hairline above the first row too: without it the list starts with no
+     edge and the numbers appear to float against the lead paragraph. */
+  border-top: 1px solid var(--line);
+}
+
+.method-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 14px;
+  /* The number column is fixed so the four titles start on one vertical line.
+     With `auto`, "04" and "01" differ by nothing here but the original Chinese
+     copy wraps differently at some widths; a fixed column cannot drift. */
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 0 18px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--line);
 }
 
-.method-card {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--panel);
-  padding: 20px;
-}
-
-.method-card h3 {
-  margin: 0 0 8px;
-  font-size: 1rem;
+.method-row__index {
+  /* Tabular + explicit weight so the numbers line up as a column rather than as
+     four pieces of text that happen to be numeric. */
+  font-variant-numeric: tabular-nums;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.9;
   color: var(--accent-2);
+  opacity: 0.85;
 }
 
-.method-card p {
+.method-row__title {
+  margin: 0 0 6px;
+  font-size: 1.02rem;
+  font-weight: 700;
+}
+
+.method-row__body {
   margin: 0;
   font-size: 0.88rem;
+  line-height: 1.72;
   color: var(--text-dim);
+  text-wrap: pretty;
 }
 
 .citation-list {

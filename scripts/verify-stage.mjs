@@ -283,6 +283,128 @@ await loadAt(1440, 900, { reduceMotion: true })
   )
 }
 
+/* ---------- T9: the timeline axis is one line, and it grows ---------- */
+
+// The plan's T1-T10 had no assertion covering the timeline at all; the axis was
+// only checked by unit-testing its reveal curve. These three check the part a
+// unit test cannot see: that the line is a single element spanning the markers,
+// that scrolling actually scales it, and that reduced motion leaves it at full
+// span rather than un-grown.
+await loadAt(1440, 900)
+{
+  // Bring the section into view first. `TimelineAxis` writes the line's
+  // `top`/`height` from a measurement it takes once it can see the markers; at
+  // scroll 0 the section is ~9000px down, every marker sits in the same
+  // off-screen bucket and the span reads 0. Measuring before the scroll is what
+  // made this assertion fail against a component that was working.
+  await evaluate(`(() => {
+    const root = document.querySelector('.timeline-axis')
+    const top = root.getBoundingClientRect().top + window.scrollY
+    window.scrollTo(0, Math.round(top - 200))
+  })()`)
+  await sleep(1400)
+
+  const axis = await evaluate(`(() => {
+    const root = document.querySelector('.timeline-axis')
+    const line = document.querySelector('.timeline-axis__line')
+    const markers = [...document.querySelectorAll('.timeline__marker')]
+    if (!root || !line) return null
+    const rootTop = root.getBoundingClientRect().top
+    const centre = (el) => {
+      const r = el.getBoundingClientRect()
+      return r.top + r.height / 2 - rootTop
+    }
+    // Recover the span the component actually wrote, rather than the painted
+    // rect: scaleY shrinks the painted height while the axis is still growing.
+    const written = parseFloat(line.style.height)
+    return {
+      markerCount: markers.length,
+      spanStart: +centre(markers[0]).toFixed(1),
+      spanEnd: +centre(markers[markers.length - 1]).toFixed(1),
+      writtenHeight: Number.isFinite(written) ? +written.toFixed(1) : null,
+      writtenTop: parseFloat(line.style.top),
+      transform: getComputedStyle(line).transform,
+      railCount: document.querySelectorAll('.timeline__rail').length,
+    }
+  })()`)
+
+  check(
+    'T9a. one axis replaces the five per-node rails',
+    axis && axis.railCount === 0 && axis.markerCount === 5,
+    axis ? `${axis.markerCount} markers, ${axis.railCount} old rails` : 'axis markup missing',
+  )
+
+  // The line must reach from the first marker to the last, not stop inside the
+  // last card: SDS 4.10's "count x min-height" formula would have done that.
+  check(
+    'T9b. axis spans first marker to last',
+    axis &&
+      axis.writtenHeight !== null &&
+      Math.abs(axis.writtenTop - axis.spanStart) <= 2 &&
+      axis.writtenTop + axis.writtenHeight >= axis.spanEnd - 2,
+    axis
+      ? `line ${axis.writtenTop}..${(axis.writtenTop + (axis.writtenHeight ?? 0)).toFixed(1)}, markers ${axis.spanStart}..${axis.spanEnd}`
+      : 'no line',
+  )
+
+  const grown = await evaluate(`(async () => {
+    const before = getComputedStyle(document.querySelector('.timeline-axis__line')).transform
+    const root = document.querySelector('.timeline-axis')
+    const top = root.getBoundingClientRect().top + window.scrollY
+    window.scrollTo(0, Math.round(top + root.getBoundingClientRect().height))
+    await new Promise((r) => setTimeout(r, 1400))
+    const after = getComputedStyle(document.querySelector('.timeline-axis__line')).transform
+    return { before, after }
+  })()`)
+
+  const scaleOf = (tf) => {
+    if (!tf || tf === 'none') return 1
+    const m = tf.match(/matrix\(([^)]+)\)/)
+    return m ? Number(m[1].split(',')[3]) : NaN
+  }
+  const scaleBefore = scaleOf(grown?.before)
+  const scaleAfter = scaleOf(grown?.after)
+  check(
+    'T9c. axis actually grows as it scrolls into view',
+    Number.isFinite(scaleBefore) && Number.isFinite(scaleAfter) && scaleAfter > scaleBefore,
+    `scaleY ${scaleBefore} → ${scaleAfter}`,
+  )
+}
+
+/* ---------- T10: reduced motion leaves the axis grown, not hidden ---------- */
+
+await loadAt(1440, 900, { reduceMotion: true })
+{
+  const state = await evaluate(`(() => {
+    const line = document.querySelector('.timeline-axis__line')
+    const items = [...document.querySelectorAll('.timeline__item')]
+    const cs = getComputedStyle(line)
+    const m = cs.transform.match(/matrix\\(([^)]+)\\)/)
+    return {
+      scaleY: m ? Number(m[1].split(',')[3]) : (cs.transform === 'none' ? 1 : NaN),
+      itemCount: items.length,
+      hidden: items.filter((el) => {
+        const s = getComputedStyle(el)
+        return s.opacity !== '1' || s.visibility === 'hidden' || s.display === 'none'
+      }).length,
+      // Never write an inline style under reduced motion; the stylesheet's final
+      // state is the only state.
+      inlineStyled: items.filter((el) => el.getAttribute('style')).length,
+    }
+  })()`)
+
+  check(
+    'T10a. axis is at full span under reduced motion',
+    state.scaleY >= 0.99,
+    `scaleY ${state.scaleY}`,
+  )
+  check(
+    'T10b. every milestone is visible and unstyled under reduced motion',
+    state.itemCount === 5 && state.hidden === 0 && state.inlineStyled === 0,
+    `${state.itemCount} items, ${state.hidden} hidden, ${state.inlineStyled} inline-styled`,
+  )
+}
+
 ws.close()
 chrome.kill()
 await sleep(400)

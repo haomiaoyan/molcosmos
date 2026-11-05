@@ -9,7 +9,12 @@ import { TopnavTools } from './TopnavTools'
 
 export function MethodSection() {
   const { t } = useI18n()
-  const cards = [
+  // Numbered rows rather than four cards (plan Q3, option a). The copy is
+  // untouched — same four pairs of i18n keys, in the same order — because the
+  // objection was to the fourth identical card grid on one page, not to the
+  // text. The number is derived from the index so a fifth step cannot be added
+  // without its row inventing one.
+  const steps = [
     ['method.m1.title', 'method.m1.body'],
     ['method.m2.title', 'method.m2.body'],
     ['method.m3.title', 'method.m3.body'],
@@ -25,14 +30,23 @@ export function MethodSection() {
         </h2>
         <p className="section__lead">{t('method.lead')}</p>
       </header>
-      <div className="method-grid">
-        {cards.map(([title, body]) => (
-          <article key={title} className="method-card">
-            <h3>{t(title)}</h3>
-            <p>{t(body)}</p>
-          </article>
+      <ol className="method-list">
+        {steps.map(([title, body], i) => (
+          <li key={title} className="method-row">
+            {/* Hidden from assistive tech on purpose: the `<ol>` already
+                announces "1 of 4", and a reader hearing "one, 01, …" gets the
+                count twice. The number is the visual affordance that says
+                "sequence"; the semantics say the same thing properly. */}
+            <span className="method-row__index mono" aria-hidden="true">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <div>
+              <h3 className="method-row__title">{t(title)}</h3>
+              <p className="method-row__body">{t(body)}</p>
+            </div>
+          </li>
         ))}
-      </div>
+      </ol>
       <ul className="citation-list">
         <li>{t('cite.chemicalSpace')}</li>
         <li>{t('cite.lipinski')}</li>
