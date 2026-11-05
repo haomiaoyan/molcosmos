@@ -1,42 +1,33 @@
-import { APP_NAME } from '../config'
 import { useI18n } from '../lib/i18n'
 import { HeroMolecule } from './HeroMolecule'
+import { HeroStage } from './HeroStage'
 
 interface Props {
   onStart: () => void
   onExplore: () => void
 }
 
-const FEATURES = [
-  ['hero.f1.title', 'hero.f1.body'],
-  ['hero.f2.title', 'hero.f2.body'],
-  ['hero.f3.title', 'hero.f3.body'],
-  ['hero.f4.title', 'hero.f4.body'],
-] as const
-
 export function Hero({ onStart, onExplore }: Props) {
   const { t } = useI18n()
   return (
     <section className="hero" id="top">
-      <div className="hero__glow" aria-hidden="true" />
-      <div className="hero__stars" aria-hidden="true" />
+      <HeroStage />
       <div className="hero__inner">
         <div className="hero__molecule-slot">
           <HeroMolecule />
         </div>
-        <p className="hero__eyebrow">
-          <span className="dot" aria-hidden="true" /> {APP_NAME} · {t('app.course')} · {t('hero.eyebrow')}
-        </p>
         <h1 className="hero__title">
-          {t('hero.title.l1')}
-          <br />
-          {t('hero.title.l2pre')}
-          <span className="hero__accent">10⁶⁰</span>
-          {t('hero.title.l2post')}
-          <br />
-          {t('hero.title.l3pre')}
-          <span className="hero__accent">{t('hero.title.l3accent')}</span>
-          {t('hero.title.l3post')}
+          <span className="hero-line">{t('hero.title.l1')}</span>
+          <span className="hero-line">
+            {t('hero.title.l2pre')}
+            <span className="hero__accent" data-no-split>10⁶⁰</span>
+            {t('hero.title.l2post')}
+          </span>
+          <span className="hero-line">
+            {t('hero.title.l3pre')}
+            <span className="hero__accent" data-no-split>{t('hero.title.l3accent')}</span>
+            {t('hero.title.l3post')}
+          </span>
         </h1>
         <p className="hero__lead">{t('hero.lead')}</p>
         <div className="hero__actions">
@@ -50,14 +41,6 @@ export function Hero({ onStart, onExplore }: Props) {
             {t('hero.cta2')}
           </button>
         </div>
-        <ul className="feature-grid">
-          {FEATURES.map(([title, body]) => (
-            <li key={title} className="feature">
-              <h3>{t(title)}</h3>
-              <p>{t(body)}</p>
-            </li>
-          ))}
-        </ul>
       </div>
     </section>
   )

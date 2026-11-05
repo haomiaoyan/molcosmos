@@ -1,6 +1,10 @@
 /* MolCosmos · 分子宇宙 — deep-space UI theme */
 
 :root {
+  /* Scrollbar width, published by `lib/scrollbar.ts` at mount and on resize.
+     Full-bleed layers use `calc(100vw - var(--sbw))` so they match the visible
+     viewport instead of the scrollbar-inclusive `100vw`. */
+  --sbw: 0px;
   --bg: #05060f;
   --bg-2: #0a0d1e;
   --panel: rgba(14, 18, 38, 0.72);
@@ -289,22 +293,53 @@ body {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  overflow: hidden;
+  /* `visible` so the full-bleed stage below can reach the viewport edges; the
+     molecule slot is positioned inside the grid to pay for it (see below). */
+  overflow: visible;
   padding: 120px 0 80px;
 }
 
-.hero__glow {
+/* ---------- hero stage (full-bleed backdrop, no content) ---------- */
+
+.hero__stage {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  /* `100vw` is scrollbar-inclusive and would hang 8px off the right edge, so
+     subtract the measured scrollbar width instead. */
+  width: calc(100vw - var(--sbw));
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.hero__stage-glow {
   position: absolute;
   inset: -20%;
   background:
     radial-gradient(700px 420px at 72% 38%, rgb(var(--accent-3-rgb) / 0.22), transparent 65%),
     radial-gradient(560px 380px at 24% 64%, rgb(var(--accent-2-rgb) / 0.14), transparent 65%),
     radial-gradient(900px 500px at 50% 120%, rgb(var(--accent-rgb) / 0.12), transparent 60%);
-  pointer-events: none;
   animation: hero-drift 14s ease-in-out infinite alternate;
 }
 
-.hero__stars {
+.hero__stage-dots {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background-image: radial-gradient(rgb(var(--line-rgb) / 0.34) 1px, transparent 1px);
+  background-size: 26px 26px;
+  mask-image: radial-gradient(120% 90% at 50% 40%, #000 30%, transparent 78%);
+  -webkit-mask-image: radial-gradient(120% 90% at 50% 40%, #000 30%, transparent 78%);
+}
+
+.hero__stage--dotted .hero__stage-dots {
+  opacity: 1;
+}
+
+.hero__stage-stars {
   position: absolute;
   inset: 0;
   background-image:
@@ -317,7 +352,6 @@ body {
     radial-gradient(1.4px 1.4px at 66% 88%, rgba(230, 236, 255, 0.7), transparent),
     radial-gradient(1.2px 1.2px at 8% 58%, rgba(230, 236, 255, 0.5), transparent);
   animation: hero-twinkle 5s ease-in-out infinite alternate;
-  pointer-events: none;
 }
 
 @keyframes hero-drift {
@@ -332,6 +366,7 @@ body {
 
 .hero__inner {
   position: relative;
+  z-index: 1;
   max-width: 860px;
   text-align: center;
 }
@@ -341,12 +376,17 @@ body {
 .hero__molecule-slot {
   position: absolute;
   /* Anchored to the top of `.hero__inner` so it lines up with the title block
-     regardless of how tall the feature grid below grows. */
+     regardless of how tall the copy below grows. */
   top: 58px;
-  /* Sits in the 136px gutter beside the title. The old value (`-600px`) pushed
-     the left edge 34px past `.hero` and `overflow: hidden` ate the molecule's
-     leftmost atoms, so this is `-600px` shifted right by 40px: the slot now
-     starts 6px inside the hero column, clear of the title's first glyph. */
+  /* Sits in the gutter beside the title. `.hero` no longer clips, so this
+     value has to stay inside the hero column on its own: measured at 1920,
+     1600, 1440, 1366, 1280, 1227, 1200, 1150 and 1101 the slot's left edge
+     lands at (or within 1px of) the hero's, and the document never grows wider
+     than clientWidth at any of them.
+     The SDS suggested `max(0px, calc(50% - 560px))`, but the containing block
+     is the 640px-wide `.hero__inner`, not `.hero`, so that clamp parks the
+     molecule on top of the title. Keeping the original offset is the fix the
+     code needs; the deviation is recorded in the batch report. */
   left: calc(50% - 560px);
   width: 240px;
   height: 240px;
@@ -354,7 +394,7 @@ body {
 }
 
 /* Between 1101 and 1227px `.app` is still shrinking, so the gutter next to the
-   title narrows and a fixed +40px would not be enough. Shrink the box and push
+   title narrows and a fixed offset would not be enough. Shrink the box and push
    it further right; at 1150px this lands the slot at 48..256 with the title's
    first glyph at 278, and at 1105px at 25..233 with the glyph at 261. */
 @media (min-width: 1101px) and (max-width: 1227px) {
@@ -428,39 +468,18 @@ body {
   }
 }
 
-.hero__eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 18px;
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  color: var(--text-dim);
-  font-size: 0.85rem;
-  background: var(--panel);
-  backdrop-filter: blur(8px);
-}
-
-.hero__eyebrow .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent-2);
-  box-shadow: 0 0 10px var(--accent-2);
-  animation: dot-pulse 2.4s ease-in-out infinite;
-}
-
-@keyframes dot-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.75); }
-}
-
 .hero__title {
   font-size: clamp(2.1rem, 5.4vw, 3.8rem);
   line-height: 1.22;
   margin: 26px 0 18px;
   font-weight: 800;
   letter-spacing: 0.01em;
+}
+
+/* One line per clause. Kept as block boxes so the (later) SplitText pass can
+   split per line without the browser re-wrapping inside an accent span. */
+.hero-line {
+  display: block;
 }
 
 .hero__accent {
@@ -520,43 +539,6 @@ body {
 .btn--lg {
   padding: 14px 30px;
   font-size: 1.05rem;
-}
-
-.feature-grid {
-  display: grid;
-  /* Four cards: a fixed 2x2 reads as deliberate, auto-fit would leave one orphan. */
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  text-align: left;
-}
-
-.feature {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--panel);
-  backdrop-filter: blur(10px);
-  padding: 18px 20px;
-  transition: transform 0.2s, border-color 0.2s;
-}
-
-.feature:hover {
-  transform: translateY(-3px);
-  border-color: var(--line-strong);
-}
-
-.feature h3 {
-  margin: 0 0 8px;
-  font-size: 1rem;
-  color: var(--accent);
-}
-
-.feature p {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--text-dim);
 }
 
 /* ---------- sections ---------- */
@@ -2469,12 +2451,6 @@ html[lang='en'] .limits-list strong {
     padding: 0 14px;
   }
 
-  /* Two 170px columns on a phone squeeze the copy into 4-line paragraphs;
-     stack them instead and keep the 2x2 symmetry for anything wider. */
-  .feature-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .topnav {
     padding: 8px 14px;
   }
@@ -2642,20 +2618,14 @@ html[lang='en'] .limits-list strong {
 
   /* Infinite decorative loops: stop them where they look best rather than
      leaving them at frame zero, which can mean invisible. */
-  .hero__glow {
+  .hero__stage-glow {
     animation: none;
     transform: none;
   }
 
-  .hero__stars {
+  .hero__stage-stars {
     animation: none;
     opacity: 0.85;
-  }
-
-  .hero__eyebrow .dot {
-    animation: none;
-    opacity: 1;
-    transform: none;
   }
 
   .explore-btn__pulse {
@@ -2677,7 +2647,6 @@ html[lang='en'] .limits-list strong {
   .btn,
   .class-card,
   .station,
-  .feature,
   .topnav a,
   .shortlist__row,
   .lab__preset,

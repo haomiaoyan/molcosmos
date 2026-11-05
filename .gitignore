@@ -4,3 +4,5 @@ dist
 
 # Scratch space: build temp dirs, headless-browser profiles and screenshots
 .tmp-*
+_shots/
+.tmp-build/

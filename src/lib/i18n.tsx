@@ -70,26 +70,6 @@ const S = {
   ],
   'hero.cta': ['进入分子宇宙', 'Enter the molecular universe'],
   'hero.cta2': ['触发一次生成式探索', 'Run a generative exploration'],
-  'hero.f1.title': ['一片星系，一次讲清', 'One galaxy, one explanation'],
-  'hero.f1.body': [
-    '约 10⁶⁰ 个可能的小分子（含 ≤30 个 C/N/O/S 原子）构成的化学空间，画成一片三臂旋涡星系。每颗星都由固定种子确定性生成。',
-    'The chemical space of roughly 10⁶⁰ possible small molecules (up to 30 C/N/O/S atoms), drawn as a three-armed spiral galaxy. Every star is generated deterministically from a fixed seed.',
-  ],
-  'hero.f2.title': ['亮度即类药潜力', 'Brightness is drug-likeness'],
-  'hero.f2.body': [
-    'AI 打分高的星更亮更大：分子量、logP、氢键、环系离口服药理想区越近，星光越盛。',
-    'Stars the AI scores higher shine brighter and larger: the closer a molecule sits to the oral-drug sweet spot in weight, logP, hydrogen bonding and rings, the stronger its light.',
-  ],
-  'hero.f3.title': ['点开任何一颗星', 'Open any star'],
-  'hero.f3.body': [
-    '3D 球棍模型、性质雷达图、Lipinski 徽章——每个数字都来自你眼前这份代码，可以手算复核。',
-    'A 3D ball-and-stick model, a property radar and Lipinski badges — every number comes from the code in front of you and can be recomputed by hand.',
-  ],
-  'hero.f4.title': ['五关卡，一条流水线', 'Five stages, one pipeline'],
-  'hero.f4.body': [
-    '靶点确认、虚拟筛选、分子生成、性质预测、临床试验——每一关都标出 AI 到底参与了多少，以及哪一关它还插不上手。',
-    'Target ID, virtual screening, generation, property prediction, trials — each stage marks how much AI actually does, and where it still cannot help.',
-  ],
 
   /* ---------- cosmos stage ---------- */
   'cosmos.eyebrow': ['主展览', 'Main exhibit'],

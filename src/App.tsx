@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { CosmosScene } from './components/CosmosScene'
 import { Hero } from './components/Hero'
 import { MoleculePanel, UniverseLegend } from './components/MoleculePanel'
@@ -23,6 +23,7 @@ import { applyTheme, loadTheme, saveTheme, themeById, type ThemeId } from './lib
 import type { Molecule } from './lib/molecule'
 import { shareUrl, loadShortlist, resolveShortlist, saveShortlist, toggleShortlist } from './lib/shortlist'
 import { stepUniverse } from './lib/search'
+import { observeScrollbarWidth } from './lib/scrollbar'
 import { EMPTY_URL_STATE, readUrlState, writeUrlState, type UrlState } from './lib/urlState'
 import { DEFAULT_WEIGHTS, isDefaultWeights, type Weights } from './lib/weights'
 
@@ -57,6 +58,15 @@ function CosmosApp({ initialUrl }: { initialUrl: UrlState }) {
     applyTheme(themeId)
     saveTheme(themeId)
   }, [themeId])
+
+  // The full-bleed layers are sized with `calc(100vw - var(--sbw))`, so the
+  // measured scrollbar width has to be republished whenever it can change.
+  //
+  // `index.html` publishes the first value inline, before any stylesheet loads.
+  // This effect takes over afterwards and keeps it current — including the case
+  // the inline bootstrap cannot know about: the bar appearing once the app has
+  // rendered enough content. See `lib/scrollbar.ts`.
+  useLayoutEffect(() => observeScrollbarWidth(), [])
 
   // Deep link support: ?star=MCX-000123 flies to a molecule on first paint.
   useEffect(() => {
