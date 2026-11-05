@@ -171,6 +171,12 @@ export function usePointerField<T extends HTMLElement = HTMLElement>(
     let frame = 0
     let next: PointerField = REST
     let visible = true
+    // Last known pointer position, so the light can come back when the hero
+    // scrolls into view under a stationary cursor. Without it the reader has
+    // to twitch the mouse before the hero responds again.
+    let lastX = 0
+    let lastY = 0
+    let hasPointer = false
 
     const flush = () => {
       frame = 0
@@ -183,17 +189,12 @@ export function usePointerField<T extends HTMLElement = HTMLElement>(
       if (!frame) frame = requestAnimationFrame(flush)
     }
 
-    const onMove = (event: PointerEvent) => {
-      // Nothing to show while the hero is scrolled past, and on a long page
-      // this handler otherwise runs — and re-renders — for every move.
-      if (!visible) return
-
+    const measure = (clientX: number, clientY: number) => {
       const surface = surfaceRef?.current ?? null
-      const hero = el.getBoundingClientRect()
       const measured = pointerField({
-        clientX: event.clientX,
-        clientY: event.clientY,
-        hero,
+        clientX,
+        clientY,
+        hero: el.getBoundingClientRect(),
         surface: surface ? surface.getBoundingClientRect() : null,
         heroVisible: visible,
         viewportWidth: window.innerWidth,
@@ -207,34 +208,60 @@ export function usePointerField<T extends HTMLElement = HTMLElement>(
       schedule()
     }
 
+    const onMove = (event: PointerEvent) => {
+      lastX = event.clientX
+      lastY = event.clientY
+      hasPointer = true
+      // Nothing to show while the hero is scrolled past, and on a long page
+      // this handler otherwise runs — and re-renders — for every move.
+      if (!visible) return
+      measure(lastX, lastY)
+    }
+
     const onLeave = () => {
-      next = REST
+      // `pointerleave` is dispatched on every ancestor the pointer leaves, so
+      // the root element fires exactly once the document itself no longer holds
+      // the pointer (it went into the browser chrome or out of the window).
+      // `window` would never fire there — it does not receive pointer events.
+      // Leaving the *hero* is not this event any more: the hit test inside
+      // `pointerField` answers that on the next move, which is what lets the
+      // light survive out to the screen edges.
+      hasPointer = false
+      // Same reason as `measure`: fade out in place rather than from the
+      // top-left corner.
+      next = { ...REST, vx: next.vx, vy: next.vy }
       schedule()
     }
 
-    let observer: IntersectionObserver | null = null
-    if (typeof IntersectionObserver === 'function') {
-      observer = new IntersectionObserver(
-        (entries) => {
-          const entry = entries[entries.length - 1]
-          // `>=` rather than `>`: the observer reports exactly the threshold
-          // value at the moment it crosses, and a strict comparison would
-          // switch the light off on the very callback that says "entering".
-          visible = entry.isIntersecting && entry.intersectionRatio >= HERO_VISIBLE_RATIO
-          if (visible) return
-          next = { ...REST, vx: next.vx, vy: next.vy }
-          schedule()
-        },
-        { threshold: HERO_VISIBLE_RATIO },
-      )
-      observer.observe(el)
-    }
+    const observer =
+      typeof IntersectionObserver === 'function'
+        ? new IntersectionObserver(
+            (entries) => {
+              const entry = entries[entries.length - 1]
+              // `>=` rather than `>`: the observer reports exactly the
+              // threshold value at the moment it crosses, so a strict
+              // comparison would switch the light off on the very callback
+              // that says "entering".
+              visible = entry.isIntersecting && entry.intersectionRatio >= HERO_VISIBLE_RATIO
+              if (visible) {
+                if (hasPointer) measure(lastX, lastY)
+                return
+              }
+              // Reuse the last coordinates so the fade-out happens where the
+              // pointer is, not in the top-left corner.
+              next = { ...REST, vx: next.vx, vy: next.vy }
+              schedule()
+            },
+            { threshold: HERO_VISIBLE_RATIO },
+          )
+        : null
+    observer?.observe(el)
 
     window.addEventListener('pointermove', onMove, { passive: true })
-    window.addEventListener('pointerleave', onLeave)
+    document.documentElement.addEventListener('pointerleave', onLeave)
     return () => {
       window.removeEventListener('pointermove', onMove)
-      window.removeEventListener('pointerleave', onLeave)
+      document.documentElement.removeEventListener('pointerleave', onLeave)
       observer?.disconnect()
       if (frame) cancelAnimationFrame(frame)
     }
