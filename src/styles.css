@@ -356,6 +356,54 @@ body {
   width: 32px;
   padding: 0;
   justify-content: center;
+  /* Clips the rising wash to the pill, and keeps the glyph above it. */
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* The fill that rises from the bottom edge on hover.
+   Taken from the uiverse icon set the user supplied (`docs/ui-effects-source.md`
+   #1), where the mechanism is `height: 0 -> 100%` rather than a fade. Adapted
+   rather than copied: the source used a 50px circle and a 30px glyph, this is a
+   32px pill inside a 56px fixed nav, so the wash starts transparent enough to
+   read as light rather than as a second button, and the glyph is lifted above it
+   with `z-index` instead of relying on document order. */
+.topnav__github-fill {
+  position: absolute;
+  /* Bottom-anchored, and `calc(100% + 2px)` rather than `100%`: `height` on an
+     absolutely positioned child resolves against the *padding* box, so 100%
+     stops 1px short of each border and left a 2px sliver of the button's own
+     background showing along the top of a "full" fill. Measured 30px of a 32px
+     button before this. */
+  inset: auto 0 0 0;
+  height: 0;
+  background: linear-gradient(180deg, rgb(var(--accent-rgb) / 0.22), rgb(var(--accent-rgb) / 0.42));
+  transition: height 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.topnav__github svg {
+  position: relative;
+  z-index: 1;
+}
+
+.topnav__github:hover .topnav__github-fill {
+  height: calc(100% + 2px);
+}
+
+/* The glyph has to stay legible over the wash: `--text` on the accent tint,
+   which is a different pairing from the resting `--text-dim` on the scrim. */
+.topnav__github:hover {
+  color: var(--text);
+}
+
+/* No travel, no transition; the button keeps its colour change so the pointer
+   still gets an answer. */
+@media (prefers-reduced-motion: reduce) {
+  .topnav__github-fill {
+    transition: none;
+  }
 }
 
 /* ---------- hero ---------- */

@@ -446,6 +446,71 @@ await loadAt(1440, 900)
   }
 }
 
+/* ---------- T12: the GitHub button fills from the bottom ---------- */
+
+// Adapted from the uiverse icon set the user supplied (ui-effects-source.md #1),
+// where the mechanism is a fill rising from `height: 0` rather than a colour
+// fade. Two things have to hold or it reads as a bug: the fill reaches the full
+// button height (a `100%` height on an absolutely positioned child resolves
+// against the padding box and stops 2px short of the border, which is exactly
+// what measured 30px of 32px the first time), and the glyph stays above it.
+await loadAt(1440, 900)
+{
+  const setup = await evaluate(`(async () => {
+    const a = document.querySelector('.topnav__github')
+    const fill = a && a.querySelector('.topnav__github-fill')
+    if (!a || !fill) return null
+    const r = a.getBoundingClientRect()
+    return {
+      x: Math.round(r.left + r.width / 2),
+      y: Math.round(r.top + r.height / 2),
+      restHeight: +fill.getBoundingClientRect().height.toFixed(1),
+      buttonHeight: +r.height.toFixed(1),
+      overflow: getComputedStyle(a).overflow,
+    }
+  })()`)
+
+  if (!setup) {
+    check('T12. GitHub button fills on hover', false, 'no .topnav__github-fill found')
+  } else {
+    check(
+      'T12a. the fill starts empty and is clipped by the button',
+      setup.restHeight === 0 && setup.overflow === 'hidden',
+      `rest height ${setup.restHeight}px, overflow ${setup.overflow}`,
+    )
+
+    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: setup.x, y: setup.y, button: 'none' })
+    await sleep(800)
+    const hovered = await evaluate(`(() => {
+      const a = document.querySelector('.topnav__github')
+      const fill = a.querySelector('.topnav__github-fill')
+      const fr = fill.getBoundingClientRect()
+      const ar = a.getBoundingClientRect()
+      const svg = a.querySelector('svg')
+      const sr = svg.getBoundingClientRect()
+      const top = document.elementFromPoint(sr.left + sr.width / 2, sr.top + sr.height / 2)
+      return {
+        height: +fr.height.toFixed(1),
+        buttonHeight: +ar.height.toFixed(1),
+        glyphOnTop: top === svg,
+        // The fill must never intercept the click that opens the link.
+        fillIgnoresPointer: getComputedStyle(fill).pointerEvents === 'none',
+      }
+    })()`)
+
+    check(
+      'T12b. the fill reaches the full button height',
+      hovered.height >= hovered.buttonHeight - 0.5,
+      `fill ${hovered.height}px of ${hovered.buttonHeight}px`,
+    )
+    check(
+      'T12c. the glyph stays above the fill and the fill takes no clicks',
+      hovered.glyphOnTop && hovered.fillIgnoresPointer,
+      `glyph on top ${hovered.glyphOnTop}, pointer-events none ${hovered.fillIgnoresPointer}`,
+    )
+  }
+}
+
 ws.close()
 chrome.kill()
 await sleep(400)

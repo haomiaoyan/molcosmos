@@ -107,6 +107,12 @@ export function TopnavTools({ themeId, onTheme }: Props) {
         aria-label={t('nav.github')}
         title={t('nav.github')}
       >
+        {/* The wash that rises from the bottom on hover. It sits behind the
+            glyph and is clipped by the button's own rounded box, which is why
+            the button carries `overflow: hidden` and a stacking context: the
+            original effect used a 50px circle with `overflow: hidden`, and this
+            one is a 32px pill in a fixed nav where nothing may spill. */}
+        <span className="topnav__github-fill" aria-hidden="true" />
         <svg viewBox="0 0 16 16" width="17" height="17" aria-hidden="true" fill="currentColor">
           <path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38l-.01-1.34c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.78-.2-3.65-.89-3.65-3.96 0-.87.31-1.59.82-2.15-.08-.2-.36-1.01.08-2.11 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.91.08 2.11.51.56.82 1.28.82 2.15 0 3.08-1.87 3.75-3.66 3.95.29.25.54.73.54 1.48l-.01 2.2c0 .21.14.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
         </svg>
