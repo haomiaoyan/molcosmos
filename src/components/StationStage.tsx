@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { gsap, registerGsap, ScrollTrigger } from '../lib/gsap'
 import { stageFrame, stageSpan, type StageGeometry } from '../lib/useStageTravel'
 import { useI18n } from '../lib/i18n'
@@ -58,7 +58,49 @@ export function StationStage({ stations }: { stations: readonly Station[] }) {
   const counterRef = useRef<HTMLDivElement | null>(null)
   const fillRef = useRef<HTMLDivElement | null>(null)
 
+  /**
+   * True once the chapter's real heading has left the viewport.
+   *
+   * The caption exists for the 3640px the pin holds the reader, during which
+   * the section's own `<h2>` is thousands of pixels above. It must not appear
+   * while that heading is still on screen, or the page shows "五道关卡" twice in
+   * one viewport — which is what it did before this existed, every time the
+   * reader arrived from the nav and the heading was still in view.
+   *
+   * `IntersectionObserver` rather than a scroll listener, for the same reason
+   * `lib/pointer.ts` uses one: it fires only when the crossing actually
+   * happens, and the page's scrolling is already driven by ScrollTrigger, so
+   * two scroll handlers competing on the main thread is the thing to avoid.
+   */
+  const [headingGone, setHeadingGone] = useState(false)
+
   const total = stations.length
+
+  // Watch the real heading. It carries `id="pipeline-title"` in `Sections.tsx`,
+  // so this needs no new prop and no ref threaded through the parent.
+  useEffect(() => {
+    const heading = document.getElementById('pipeline-title')
+    if (!heading || typeof IntersectionObserver !== 'function') {
+      // Without the observer the caption simply stays available: it is the
+      // fallback that says "you are in the pipeline chapter", and losing it is
+      // worse than showing it a moment early.
+      setHeadingGone(true)
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[entries.length - 1]
+        setHeadingGone(!entry.isIntersecting)
+      },
+      // A zero threshold fires on both edges of the crossing. The bottom margin
+      // keeps the heading counted as "present" until it has really left,
+      // rather than flickering as it clips the top edge.
+      { threshold: 0, rootMargin: '0px' },
+    )
+    observer.observe(heading)
+    return () => observer.disconnect()
+  }, [])
 
   useLayoutEffect(() => {
     const pin = pinRef.current
@@ -198,12 +240,18 @@ export function StationStage({ stations }: { stations: readonly Station[] }) {
           the real heading — the section keeps its eyebrow, title and lead, and
           a screen reader still meets them in the normal document order.
 
+          It only renders once that heading has actually left the viewport.
+          Rendering it unconditionally put "五道关卡" on screen twice whenever
+          the reader arrived from the nav with the heading still visible.
+
           `aria-hidden` because it repeats that heading; announcing it twice
           would only add noise. */}
-      <div className="stage-caption" aria-hidden="true">
-        <span className="stage-caption__eyebrow mono">{t('pipeline.eyebrow')}</span>
-        <h3 className="stage-caption__title">{t('pipeline.title.accent')}</h3>
-      </div>
+      {headingGone && (
+        <div className="stage-caption" aria-hidden="true">
+          <span className="stage-caption__eyebrow mono">{t('pipeline.eyebrow')}</span>
+          <h3 className="stage-caption__title">{t('pipeline.title.accent')}</h3>
+        </div>
+      )}
 
       <div className="stage-window" ref={windowRef}>
         <ol className="station-track" ref={trackRef}>
