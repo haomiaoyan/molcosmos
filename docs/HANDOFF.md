@@ -4,8 +4,8 @@
 > 需求不明确时先用 `/grill-me` 问清楚，不许猜着写。**这是硬约定。**
 >
 > 本文件记录「每批做了什么、踩过什么」。**怎么跑起来、哪些坑不能踩**在 `QUICKSTART.md`。
-> 最后更新：2026-11-05 19:45
-> 当前状态：**SDS v1.2 · 批次 1 / 1.5 / 1.6 / 1.7 / 2 / 3 已实施 · 光晕修复已实施 · 4 条 uiverse 效果已用 · 批次 4 经用户决定作废**
+> 最后更新：2026-11-08 12:30
+> 当前状态：**SDS v1.2 · 批次 1 / 1.5 / 1.6 / 1.7 / 2 / 3 已实施 · 光晕修复已实施 · 4 条 uiverse 效果已用 · 批次 4 经用户决定作废 · reduced-motion 舞台修复已实施（§十三）**
 
 ---
 
@@ -401,6 +401,128 @@ npm run build → [vite:esbuild-transpile] remove ...: Access is denied
 **修法**：`export TEMP="$(pwd)/.tmp-build" TMP="$(pwd)/.tmp-build"`，CI（Linux）不受影响。
 
 **`vite preview` 监听问题**：不加 `--host 0.0.0.0` 时只监听 IPv6，`127.0.0.1` 连不上。
+
+---
+
+## 十三、reduced-motion 舞台修复（2026-11-08）
+
+**计划**：`docs/plan-reduced-motion-stage.md`（用户已确认）
+
+### 问题
+
+系统开启「减少动态效果」后，1440×900 下五关卡只有前两张完整可见：
+
+| 卡片 | 改前 | 改后 |
+|---|---|---|
+| 01 靶点确认 | 380/380 100% | 560/560 100% |
+| 02 虚拟筛选 | 380/380 100% | 560/560 100% |
+| 03 分子生成 | **236/380 62%** | 560/560 100% |
+| 04 性质预测 | **0/380 0%** | 560/560 100% |
+| 05 合成与临床 | **0/380 0%** | 560/560 100% |
+
+计数器还停在 `01 / 05`，既不滚也不会变。
+
+### 根因：CSS 没跟上 JS 已经做出的决定
+
+`StationStage.tsx` 的 `matchMedia` 是：
+
+```js
+`(min-width: ${STAGE_BREAKPOINT_PX}px) and (prefers-reduced-motion: no-preference)`
+```
+
+JS 本来就不在 reduced motion 下建 trigger。但 `styles.css` 的堆叠块**只写了宽度条件**：
+
+```css
+@media (max-width: 767px) { ... }
+```
+
+于是轨道不动、`.stage-window` 仍 `overflow: hidden`、2172px 的轨道被 1132px 的窗口裁掉，后三张既没有 pin 带着走，也没有滚动容器可滑。
+
+**这是两边条件不对称，不是设计取舍。**
+
+### 为什么验收脚本没拦住
+
+`verify-stage.mjs` 的 T8c 断言名写着 "all five cards still present and visible"，实际代码是：
+
+```js
+firstVisible: document.querySelector('.station').getBoundingClientRect().width > 0
+```
+
+**只测了第一张卡。** 名字说五张，代码验一张。
+
+### 改法
+
+**`src/styles.css`** —— 两段式，不是新写一套：
+
+```css
+/* 条件扩展：宽度 OR reduced motion */
+@media (max-width: 767px), (prefers-reduced-motion: reduce) { /* 原 767px 块全部内容 */ }
+
+/* 只作用于桌面 + reduced motion */
+@media (prefers-reduced-motion: reduce) and (min-width: 768px) {
+  .station-track { align-items: center; }
+  .station-track > .station { max-width: 560px; }
+  .station-track > .station[data-active='true'] { border-color: var(--line); box-shadow: none; }
+}
+```
+
+**`scripts/verify-stage.mjs`** —— T8c 改为逐卡检查，边界取 `.stage-window`（`overflow: hidden` 的那个盒子）而不是视口：
+
+```js
+visibleW = Math.max(0, Math.min(card.right, win.right) - Math.max(card.left, win.left))
+allFullyVisible = every(card => card.visibleW >= card.width - 1 && card.opacity === '1')
+```
+
+### 三个实测结论（不要再踩）
+
+1. **`max-width` 不能塞进合并块**。实测 767px 时卡片是 704px、700px 时是 637px；限宽若写进共享块会把这两个宽度悄悄改掉。必须单独放 `(min-width: 768px)` 里。改后复测 767/700/600 = **704/637/557，与改前逐值一致**。
+
+2. **560px 是量出来的，不是拍的**。1440 下正文 14.1px：不限宽 → 1132px、45–59 字/行（CJK 舒适区 30–40）；420px → 卡 2 折成 3 行、五卡高度不齐（203/227 混排）；560 与 640 都是 2 行且高度整齐，560 不抢 `.section__head` 的 760px。
+
+3. **堆叠后要压掉 `data-active` 的高亮**。trigger 不跑，第 1 张卡会一直带着为「静止态」标的那圈亮边框（`0.38` vs `0.18` + 阴影），在五张同款卡里会被读成「这张被选中」。
+
+### 验证
+
+先证明断言抓得住 bug：把 CSS 回退到改前（`git stash`），只保留新断言 ——
+
+```
+FAIL  T8c. every card is fully inside the clipping window under reduced motion
+      — 5 cards, 2/5 fully visible — clipped: 03 62%, 04 0%, 05 0%
+```
+
+再恢复修复 ——
+
+```
+PASS  T8c. every card is fully inside the clipping window under reduced motion
+      — 5 cards, all fully visible (5/5)
+```
+
+全量验收：
+
+```
+npx tsc --noEmit              0 error
+npx vitest run                168/168
+npm run build                 成功（css 44.19 → 44.44 kB，只有这两条规则的增量）
+scripts/verify.mjs            16/16
+scripts/verify-glow.mjs       12/12
+scripts/verify-stage.mjs      23/23
+```
+
+回归确认（改前 / 改后逐值一致）：
+
+| 场景 | 结果 |
+|---|---|
+| 1440 正常 | row，380px，pin 工作，mid `transform -657.715`、counter `04/05` |
+| 767 / 700 / 600 正常 | 704 / 637 / 557px，`changed: false` |
+| 390 正常 | 362px，`changed: false` |
+| 390 reduced | 362px，`changed: false` |
+| 1440 EN + reduced | 五卡全可见，卡 2/3 各 3 行，560px |
+
+**证据**：`D:\deepseek---dsh----test\.oil-ui\visual-review\shots\32-fix-verified\`
+
+### 没做的
+
+评审里的其余 P0/P1 条目（分子面板 27.5% 内容不可见、首屏次按钮无反馈、徽章数据色被主题劫持、长舞台 80% 留白、时间轴 reveal 起点）**均未动**。按 §5.0，一次只做一件事。
 
 ---
 

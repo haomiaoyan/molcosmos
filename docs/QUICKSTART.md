@@ -2,7 +2,7 @@
 
 > 目标：**30 秒内知道怎么跑起来，5 分钟内知道哪些坑不能踩。**
 > 不含历史，不含决策过程。那些在 `HANDOFF.md`。
-> 最后核对：2026-11-07，HEAD `655539`，工作区干净
+> 最后核对：2026-11-08，HEAD `e222c23` + 未提交的 reduced-motion 舞台修复（见 HANDOFF §十三）
 
 ---
 
@@ -200,6 +200,35 @@ input.dispatchEvent(new Event('input',{bubbles:true}))   // ✅
 | **两层伪元素叠加** | ✅ 现用方案 |
 
 `styles.css` 的 `.station::before/::after` 有完整注释，改之前先读。
+
+### 🟠 11. reduced-motion 与「窄屏」必须用同一个堆叠块
+
+五关卡的横向舞台有**两个**不建 trigger 的条件，`StationStage.tsx` 的 `matchMedia` 写的是：
+
+```js
+`(min-width: 768px) and (prefers-reduced-motion: no-preference)`
+```
+
+但 `styles.css` 的堆叠块一度只写了 `@media (max-width: 767px)`——**CSS 漏了 motion 那一半**。
+后果：reduced motion + 桌面宽时轨道不动、`.stage-window` 仍 `overflow: hidden`，
+2172px 的轨道被 1132px 的窗口裁掉，**第 3 张卡只剩 62%，第 4、5 张完全不可见**，
+而计数器还写着 `01 / 05`。
+
+现在的写法是条件并集，两者共用一套规则：
+
+```css
+@media (max-width: 767px), (prefers-reduced-motion: reduce) { ... }
+```
+
+**改这里时注意两点：**
+
+1. **`max-width` 不要写进这个合并块**。实测 767px 时卡片 704px、700px 时 637px，
+   限宽会悄悄改掉窄屏既有宽度。限宽单独放 `(prefers-reduced-motion: reduce) and (min-width: 768px)`。
+2. **堆叠后要压掉 `data-active`**。trigger 不跑，第 1 张卡会一直带着「静止态」那圈亮边框，
+   在五张同款卡里被读成「这张被选中」。
+
+对应断言 `verify-stage.mjs` T8c 是**逐卡**检查可见宽度（边界取 `.stage-window` 而不是视口）。
+它之前只测第一张卡，所以这个 bug 一直显示 PASS——改断言时别退回去。
 
 ---
 

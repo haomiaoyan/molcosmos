@@ -253,14 +253,30 @@ await loadAt(1440, 900, { reduceMotion: true })
   const state = await evaluate(`(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const track = document.querySelector('.station-track')
-    const cards = document.querySelectorAll('.station-track > .station').length
-    const first = document.querySelector('.station')
+    const cards = [...track.querySelectorAll(':scope > .station')]
+    // The clipping boundary is .stage-window, not the viewport: that element
+    // has overflow:hidden, so a card can be on screen and still be cut in
+    // half by it.
+    const win = document.querySelector('.stage-window').getBoundingClientRect()
+    const measured = cards.map((card) => {
+      const r = card.getBoundingClientRect()
+      const visibleW = Math.max(0, Math.min(r.right, win.right) - Math.max(r.left, win.left))
+      return {
+        step: card.querySelector('.station__step')?.textContent ?? '?',
+        width: Math.round(r.width),
+        visibleW: Math.round(visibleW),
+        visiblePct: r.width > 0 ? Math.round((visibleW / r.width) * 100) : 0,
+        opacity: getComputedStyle(card).opacity,
+      }
+    })
     return {
       reduced,
-      cards,
+      cards: measured.length,
       trackTransform: getComputedStyle(track).transform,
-      firstOpacity: first ? getComputedStyle(first).opacity : '1',
-      firstVisible: first ? first.getBoundingClientRect().width > 0 : false,
+      measured,
+      fullyVisibleCount: measured.filter((c) => c.visibleW >= c.width - 1).length,
+      // Every card must be fully inside the window AND fully opaque.
+      allFullyVisible: measured.every((c) => c.visibleW >= c.width - 1 && c.opacity === '1'),
     }
   })()`)
 
@@ -276,10 +292,22 @@ await loadAt(1440, 900, { reduceMotion: true })
     !translated,
     `transform ${state.trackTransform}`,
   )
+  // Per-card, not first-card-only. The previous version read
+  // `document.querySelector('.station')` and checked that one card had a
+  // non-zero width, so it passed while cards 3-5 were clipped away by the
+  // window: at 1440 the stage was still a 2172px row with no pin to travel it.
+  // A card being "on screen" is not the question — being inside the clipping
+  // box is.
+  const worst = state.measured
+    .filter((c) => c.visibleW < c.width - 1)
+    .map((c) => `${c.step} ${c.visiblePct}%`)
+    .join(', ')
   check(
-    'T8c. all five cards still present and visible under reduced motion',
-    state.cards === 5 && state.firstVisible && state.firstOpacity === '1',
-    `${state.cards} cards, first opacity ${state.firstOpacity}, visible ${state.firstVisible}`,
+    'T8c. every card is fully inside the clipping window under reduced motion',
+    state.cards === 5 && state.allFullyVisible,
+    state.allFullyVisible
+      ? `5 cards, all fully visible (${state.fullyVisibleCount}/5)`
+      : `${state.cards} cards, ${state.fullyVisibleCount}/5 fully visible — clipped: ${worst || 'none'}`,
   )
 }
 

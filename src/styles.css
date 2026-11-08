@@ -1576,10 +1576,19 @@ body {
   transform-origin: left center;
 }
 
-/* Narrow screens: the same five cards, stacked, with no stage around them.
-   The trigger is never created below this width (see StationStage), so every
-   rule here is undoing the desktop layout rather than fighting a pin. */
-@media (max-width: 767px) {
+/* No stage: the same five cards, stacked, with no horizontal track at all.
+   Two different conditions both land here, for the same reason — the trigger
+   is never created in either of them (see StationStage's `matchMedia`):
+   `(min-width: 768px) and (prefers-reduced-motion: no-preference)`.
+   So every rule below is undoing the desktop layout rather than fighting a pin.
+
+   The reduced-motion half was missing until this was measured: at 1440 with
+   `prefers-reduced-motion: reduce` the track stayed a 2172px row inside a
+   1132px `overflow: hidden` window, and with no pin to travel it, cards 3-5
+   were clipped for good — card 3 showed 236 of 380px, cards 4 and 5 showed
+   nothing at all, under a counter still reading "01 / 05". The JS had already
+   decided not to build the stage; the CSS had not followed. */
+@media (max-width: 767px), (prefers-reduced-motion: reduce) {
   .stage-pin {
     height: auto;
     min-height: 0;
@@ -1616,6 +1625,41 @@ body {
   .stage-counter,
   .stage-progress {
     display: none;
+  }
+}
+
+/* Readable width for the stacked cards, but only where the stack came from
+   reduced motion rather than from a narrow window.
+
+   Deliberately NOT folded into the query above: measured at 767px the cards
+   are 704px wide and at 700px they are 637px, and a cap inside that shared
+   block would have quietly narrowed both. Phones and tablets already size
+   their own cards from the window; only the desktop stack needs a ceiling.
+
+   560px is measured, not guessed. At 1440 the card body is 14.1px CJK text:
+   uncapped it runs 1132px wide at 45-59 characters per line, well past the
+   30-40 that reads comfortably, and the cards become full-width bars that
+   stop matching the rest of the page's content column. 420px wraps card 2 to
+   three lines and leaves the five cards at uneven heights (203 / 227px).
+   560 and 640 both settle at two lines and even heights; 560 keeps clear of
+   `.section__head`'s 760px so the cards still read as content rather than as
+   a second headline. */
+@media (prefers-reduced-motion: reduce) and (min-width: 768px) {
+  .station-track {
+    align-items: center;
+  }
+
+  .station-track > .station {
+    max-width: 560px;
+  }
+
+  /* There is no "current card" once the cards are a static list: the trigger
+     that used to move `data-active` never runs. Left alone, card 01 keeps the
+     lit border and glow it was marked with for the still state, which in a
+     list of five identical cards reads as "this one is selected". */
+  .station-track > .station[data-active='true'] {
+    border-color: var(--line);
+    box-shadow: none;
   }
 }
 
