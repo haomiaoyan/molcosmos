@@ -46,6 +46,17 @@
      none of them chosen. Only the wide cases are capped here; the census is
      narrow because its layout is four columns, and capping it would not help. */
   --measure: 34em;
+  /* The timeline's column width: 34em of body copy measured at the body's own
+     size, plus the card's padding and border, plus the marker gutter and its
+     gap.
+
+     It cannot simply be `var(--measure) + …`, because `em` resolves against
+     whichever element uses it: `--measure` is 544px here (root, 16px) but
+     479px inside `.timeline__body` (0.88rem, 14.08px). Adding the furniture to
+     the 544 left 65px of dead space inside every card — measured, not guessed.
+     The 0.88 is the body's own font-size, written out so the arithmetic is
+     visible rather than implied. */
+  --timeline-w: calc(var(--measure) * 0.88 + 40px + 2px + 14px + 22px);
   --shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
   --glow: 0 0 42px rgb(var(--accent-rgb) / 0.22);
 }
@@ -2557,7 +2568,13 @@ body {
   /* Centre of the marker column. Both breakpoints below keep it at half their
      gutter, so the line and the dots cannot drift apart. */
   --axis-x: 7px;
-  max-width: 860px;
+  /* Sized to the reading width, not to a round number: `--timeline-w` is the
+     body's own measure plus the card's padding and border plus the marker
+     gutter and its gap. At 860px the card was 824px wide while its text was
+     479px, so a third of every card was empty and the column read as a box
+     that had failed to fill. See `--timeline-w` for why the arithmetic is
+     written out instead of reusing `--measure` directly. */
+  max-width: var(--timeline-w);
   margin: 0 auto;
 }
 
@@ -2693,7 +2710,8 @@ body {
 }
 
 .timeline__disclaimer {
-  max-width: 860px;
+  /* Matches the axis above it, so the chapter has one right edge. */
+  max-width: var(--timeline-w);
   margin: 26px auto 0;
   padding: 16px 20px;
   border: 1px dashed var(--line-strong);
