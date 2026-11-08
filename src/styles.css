@@ -37,6 +37,15 @@
   --radius: 18px;
   --radius-sm: 10px;
   --font-mono: 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
+  /* The page's reading width, in ems so it scales with the copy it measures.
+     34em ≈ 34 full-width CJK characters, the upper end of the 30-40 range
+     that reads comfortably at these sizes. Before this existed the long-form
+     paragraphs sized themselves off whatever column happened to contain them:
+     the timeline ran 55 characters per line and the method section 50, while
+     the census cards were 17 — the same page, three different reading widths,
+     none of them chosen. Only the wide cases are capped here; the census is
+     narrow because its layout is four columns, and capping it would not help. */
+  --measure: 34em;
   --shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
   --glow: 0 0 42px rgb(var(--accent-rgb) / 0.22);
 }
@@ -1075,10 +1084,19 @@ body {
   background: rgb(var(--accent-4-rgb) / 0.12);
 }
 
+/* Gold is reserved for three jobs: the wordmark, the primary CTA, and the
+   accent half of a section title. Everything else that used to be gold now
+   speaks in the palette's ordinary text or its teal, because 23 gold strings
+   and 38 gold elements on one page is not emphasis — it is a wash, and it
+   competed with the one place gold genuinely means something: the Goldilocks
+   data colour on the stars. */
+
 .mol-panel__action--on {
-  color: var(--accent);
-  border-color: rgb(var(--accent-rgb) / 0.55);
-  background: rgb(var(--accent-rgb) / 0.1);
+  /* "Saved" is a state, not a call to action. Teal already carries "this is
+     information" everywhere else on the page. */
+  color: var(--accent-2);
+  border-color: rgb(var(--accent-2-rgb) / 0.5);
+  background: rgb(var(--accent-2-rgb) / 0.1);
 }
 
 .mol-panel__close {
@@ -1199,20 +1217,31 @@ body {
   border: 1px solid var(--line-strong);
 }
 
+/* The four class badges carry the molecule's class, so their colour is data and
+   must not move when the palette does. They used to read `--accent-*`, which is
+   per-theme: under `abyss` a candidate badge rendered `rgb(63,214,184)` while
+   the legend dot for the same class stayed `rgb(55,226,200)`.
+
+   `--data-*` is written once by `applyTheme` and is identical in all five
+   themes, so a badge and the dot beside it can no longer disagree.
+
+   `border-color`/`background` still derive from the accent triplets on
+   purpose: those are *surfaces*, and they should tint with the backdrop. Only
+   the ink is data. */
 .badge--goldilocks {
-  color: var(--accent);
+  color: var(--data-goldilocks);
   border-color: rgb(var(--accent-rgb) / 0.5);
   background: rgb(var(--accent-rgb) / 0.1);
 }
 
 .badge--candidate {
-  color: var(--accent-2);
+  color: var(--data-candidate);
   border-color: rgb(var(--accent-2-rgb) / 0.5);
   background: rgb(var(--accent-2-rgb) / 0.08);
 }
 
 .badge--lead {
-  color: var(--accent-4);
+  color: var(--data-lead);
   border-color: rgb(var(--accent-4-rgb) / 0.5);
 }
 
@@ -1220,6 +1249,8 @@ body {
   color: var(--text-mute);
 }
 
+/* Not a class badge: this one says "no Lipinski violations", which is a verdict
+   rather than a category, so it stays on the palette's teal. */
 .badge--clean {
   color: var(--accent-2);
   border-color: rgb(var(--accent-2-rgb) / 0.45);
@@ -1233,7 +1264,7 @@ body {
 
 /* Marks a molecule that exists only because the visitor ran an exploration. */
 .badge--generated {
-  color: var(--accent-3);
+  color: var(--data-generated);
   border-color: rgb(var(--accent-3-rgb) / 0.5);
   background: rgb(var(--accent-3-rgb) / 0.1);
 }
@@ -1491,6 +1522,8 @@ body {
   min-height: 380px;
   display: flex;
   flex-direction: column;
+  /* Centred rather than `center`-only: the caption, the cards and the counter
+     are one group and should sit together in the middle of the pinned box. */
   justify-content: center;
   gap: 20px;
   /* Deliberately no `overflow: hidden`: the full-bleed backdrop below is a
@@ -1498,6 +1531,37 @@ body {
      the 1132px column. The only thing that must be clipped is the track, and
      `.stage-window` does that on its own. `body { overflow-x: hidden }` already
      stops the bleed from producing a scrollbar. */
+}
+
+/* Which chapter is this? The real heading scrolled away 206px before the pin
+   started and is 3846px above by the time it ends, so the stage restates
+   itself here. Small and quiet: it is orientation, not a second title. */
+.stage-caption {
+  position: relative;
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.stage-caption__eyebrow {
+  display: block;
+  margin: 0 0 4px;
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+}
+
+.stage-caption__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  /* NOT gold: gold is the wordmark, the primary CTA and a section title's
+     accent half. This caption is orientation — it repeats a heading that is
+     already gold a few hundred pixels above — so it states itself in plain
+     text and leaves the colour budget alone. */
+  color: var(--text-dim);
 }
 
 .stage-pin::before {
@@ -1626,6 +1690,13 @@ body {
   .stage-progress {
     display: none;
   }
+
+  /* The caption exists to say "you are still in this chapter while the cards
+     slide past". Nothing slides here, and the section's own heading is directly
+     above the stack, so repeating it would be a duplicate title. */
+  .stage-caption {
+    display: none;
+  }
 }
 
 /* Readable width for the stacked cards, but only where the stack came from
@@ -1716,7 +1787,9 @@ body {
 .funnel__value {
   font-size: 1.15rem;
   font-weight: 700;
-  color: var(--accent);
+  /* A number in a funnel tier is data, not a heading. It reads at full text
+     colour and lets its own weight carry the emphasis. */
+  color: var(--text);
   white-space: nowrap;
   flex: 0 0 auto;
 }
@@ -2426,7 +2499,10 @@ body {
 }
 
 .compare__best {
-  color: var(--accent);
+  /* The "best in this row" marker. It was gold; it is now the same teal the
+     rest of the page uses for "computed information", with the star and the
+     weight doing the pointing. */
+  color: var(--accent-2);
   font-weight: 600;
 }
 
@@ -2588,7 +2664,10 @@ body {
   margin: 0 0 6px;
   font-size: 0.76rem;
   letter-spacing: 0.16em;
-  color: var(--accent);
+  /* A year is a label. Gold on a label competes with the milestone itself; the
+     `.timeline__item--foundation` variant below keeps teal to mark the two
+     foundational results, which is the distinction that actually matters. */
+  color: var(--text-dim);
 }
 
 .timeline__item--foundation .timeline__year {
@@ -2607,6 +2686,10 @@ body {
   line-height: 1.72;
   color: var(--text-dim);
   text-wrap: pretty;
+  /* Measured at 55 CJK characters per line inside the 782px card, well past
+     the 30-40 that reads comfortably. `--measure` is the one place the page's
+     reading width is decided; see its definition for why 34em. */
+  max-width: var(--measure);
 }
 
 .timeline__disclaimer {
@@ -2731,6 +2814,8 @@ body {
   line-height: 1.72;
   color: var(--text-dim);
   text-wrap: pretty;
+  /* Was 50 characters per line across 698px; same ceiling as the timeline. */
+  max-width: var(--measure);
 }
 
 .citation-list {
@@ -2762,11 +2847,23 @@ body {
   margin-inline: auto;
 }
 
+/* Four negations, not four cards.
+   The section says what this tool cannot tell you; a rounded box around each
+   line reads as "a comparable unit you can pick", which is the opposite of
+   what the copy is doing. Worse, its geometry was identical to the four census
+   cards two sections up — same radius scale, same padding — so the page had
+   two consecutive "grid of four rounded rectangles" blocks that meant
+   different things.
+
+   A rule down the left edge says "these are a list of constraints" and costs
+   nothing. The red stays: it is the one place on the page where red means
+   "read this as a warning" rather than "data". */
 .limits-list li {
-  border: 1px solid rgba(255, 107, 122, 0.28);
-  border-radius: var(--radius-sm);
-  background: rgba(255, 107, 122, 0.05);
-  padding: 14px 18px;
+  border: 0;
+  border-left: 2px solid rgba(255, 107, 122, 0.5);
+  border-radius: 0;
+  background: none;
+  padding: 14px 0 14px 18px;
   font-size: 0.92rem;
   color: var(--text-dim);
 }
@@ -2813,8 +2910,9 @@ html[lang='en'] .limits-list strong {
 }
 
 .footer__links a:hover {
-  color: var(--accent);
-  border-color: rgb(var(--accent-rgb) / 0.4);
+  /* A footer link hover is not a call to action. */
+  color: var(--text);
+  border-color: var(--line-strong);
 }
 
 .footer__sep {
@@ -3001,8 +3099,11 @@ html[lang='en'] .limits-list strong {
 
 .shortlist__toggle:hover,
 .shortlist--open .shortlist__toggle {
-  color: var(--accent);
-  border-color: rgb(var(--accent-rgb) / 0.5);
+  /* The shelf is open. That is a state of the panel, not the page's main
+     action, so it takes the ordinary "active surface" treatment. */
+  color: var(--text);
+  border-color: var(--line-strong);
+  background: var(--panel-solid);
 }
 
 .shortlist__count {

@@ -190,6 +190,21 @@ export function StationStage({ stations }: { stations: readonly Station[] }) {
 
   return (
     <div className="stage-pin" ref={pinRef}>
+      {/* The chapter's own heading stays in `Sections.tsx` and scrolls away
+          before the pin engages: measured, it sits at -206px when the pin
+          starts and -3846px by the end, so for the whole 3640px journey the
+          reader sees cards sliding past with nothing saying which chapter this
+          is. This is a compact restatement inside the pinned box, not a move of
+          the real heading — the section keeps its eyebrow, title and lead, and
+          a screen reader still meets them in the normal document order.
+
+          `aria-hidden` because it repeats that heading; announcing it twice
+          would only add noise. */}
+      <div className="stage-caption" aria-hidden="true">
+        <span className="stage-caption__eyebrow mono">{t('pipeline.eyebrow')}</span>
+        <h3 className="stage-caption__title">{t('pipeline.title.accent')}</h3>
+      </div>
+
       <div className="stage-window" ref={windowRef}>
         <ol className="station-track" ref={trackRef}>
           {stations.map((station, i) => (

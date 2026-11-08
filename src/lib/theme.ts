@@ -31,6 +31,30 @@ const baseText = {
   '--text-mute': '#5f6c92',
 }
 
+/**
+ * The four molecule classes and the exploration tint, as CSS custom properties.
+ *
+ * These are **data**, not decoration: they encode which class a molecule
+ * belongs to, so they must stay put while the backdrop changes. `galaxy.ts`
+ * owns the values and its 107 tests protect them; this is the UI-layer mirror
+ * so stylesheets can say `var(--data-goldilocks)` instead of hard-coding a
+ * hex, and so a badge and the legend dot beside it can never drift apart.
+ *
+ * They are written by `applyTheme` rather than repeated inside each theme's
+ * `vars`, because they are identical in all five themes. Before this existed
+ * the badges reached for `--accent-*`, which *does* change per theme: measured
+ * under `abyss`, `.badge--candidate` rendered `rgb(63,214,184)` while the
+ * legend dot for the same class stayed `rgb(55,226,200)` — one class, two
+ * colours, on one screen.
+ */
+export const DATA_COLOR_VARS = {
+  '--data-goldilocks': '#ffd47e',
+  '--data-candidate': '#37e2c8',
+  '--data-lead': '#6ea8fe',
+  '--data-far': '#5a6788',
+  '--data-generated': '#b389ff',
+} as const
+
 export const THEMES: readonly Theme[] = [
   {
     id: 'cosmos',
@@ -229,6 +253,12 @@ export function saveTheme(id: ThemeId): void {
 export function applyTheme(id: ThemeId): void {
   const theme = themeById(id)
   const root = document.documentElement
+  // The data colours first, and unconditionally: they are the same in every
+  // theme, and a stylesheet rule that reads one of them must never fall back
+  // to the palette's accent because the theme happened not to define it.
+  for (const [name, value] of Object.entries(DATA_COLOR_VARS)) {
+    root.style.setProperty(name, value)
+  }
   for (const [name, value] of Object.entries(theme.vars)) {
     root.style.setProperty(name, value)
   }

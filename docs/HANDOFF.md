@@ -4,8 +4,8 @@
 > 需求不明确时先用 `/grill-me` 问清楚，不许猜着写。**这是硬约定。**
 >
 > 本文件记录「每批做了什么、踩过什么」。**怎么跑起来、哪些坑不能踩**在 `QUICKSTART.md`。
-> 最后更新：2026-11-08 12:30
-> 当前状态：**SDS v1.2 · 批次 1 / 1.5 / 1.6 / 1.7 / 2 / 3 已实施 · 光晕修复已实施 · 4 条 uiverse 效果已用 · 批次 4 经用户决定作废 · reduced-motion 舞台修复已实施（§十三）**
+> 最后更新：2026-11-08 14:00
+> 当前状态：**SDS v1.2 · 批次 1 / 1.5 / 1.6 / 1.7 / 2 / 3 已实施 · 光晕修复已实施 · 4 条 uiverse 效果已用 · 批次 4 经用户决定作废 · reduced-motion 舞台修复已实施（§十三） · 视觉系统第一批已实施（§十四）**
 
 ---
 
@@ -523,6 +523,171 @@ scripts/verify-stage.mjs      23/23
 ### 没做的
 
 评审里的其余 P0/P1 条目（分子面板 27.5% 内容不可见、首屏次按钮无反馈、徽章数据色被主题劫持、长舞台 80% 留白、时间轴 reveal 起点）**均未动**。按 §5.0，一次只做一件事。
+
+---
+
+## 十四、视觉系统第一批（2026-11-08）
+
+**计划**：`docs/plan-visual-system.md`（用户确认走「路线 1」+ 金色收缩）
+
+范围：**A2 路线 1** + **B2-1** + **B2-3** + **C2-1**。
+不做：B2-2（compare 并入 stats）、C2-2（pin 高度）、C2-3（计数器加强）、改标题。
+
+### 14.1 数据色与强调色解绑（A2 路线 1）
+
+**问题**：`theme.ts` 里四个强调色与四个数据色在默认主题下**逐值相同**：
+
+```
+--accent   #ffd47e == CLASS_COLORS.goldilocks
+--accent-2 #37e2c8 == CLASS_COLORS.candidate
+--accent-3 #b389ff == EXPLORATION_COLOR
+--accent-4 #6ea8fe == CLASS_COLORS.lead
+```
+
+徽章走 `--accent-*`（随主题变），图例圆点走内联 `CLASS_COLORS`（不变）。实测切到 `abyss`：
+
+| | cosmos | abyss |
+|---|---|---|
+| `.badge--candidate` | `rgb(55,226,200)` | `rgb(63,214,184)` ← 变了 |
+| `.legend__dot` | `rgb(55,226,200)` | `rgb(55,226,200)` ← 没变 |
+
+**同一屏、同一类别、两种颜色**，违反 `§四` 的「不改 CLASS_COLORS」。
+
+**改法**：新增 `DATA_COLOR_VARS`，由 `applyTheme` 无条件写入（五套主题同值）：
+
+```ts
+export const DATA_COLOR_VARS = {
+  '--data-goldilocks': '#ffd47e',
+  '--data-candidate': '#37e2c8',
+  '--data-lead': '#6ea8fe',
+  '--data-far': '#5a6788',
+  '--data-generated': '#b389ff',
+} as const
+```
+
+徽章的 `color` 改用 `var(--data-*)`；`border-color` / `background` **仍用 accent 三元组**——那是表面，该跟着背景色变。只有「墨」是数据。
+
+`galaxy.ts` 的 `CLASS_COLORS` **一个字节没动**（`git diff src/lib/galaxy.ts` 为空）。
+
+### 14.2 为什么没换强调色的值
+
+计划里原本推荐 `--accent: #f5c451`。实测否决了它：
+
+用 CIEDE2000 量了 20 组「强调色 vs 它对应的数据色」，**10 组 deltaE < 15**（人眼难辨），且集中在默认主题（4/4 全撞）与 nebula（3/4）：
+
+| 令牌 | 要避开 | 达标候选（dE≥15 且对比度≥4.5） |
+|---|---|---|
+| `--accent` | goldilocks `#ffd47e` | `#e07b39`(25.9) / `#d2691e`(30.1) |
+| `--accent-2` | candidate `#37e2c8` | `#38bdf8`(27.9) / `#0ea5e9`(32.2) |
+| `--accent-3` | generated `#b389ff` | `#f472b6`(20.7) / `#ec4899`(24.4) |
+| `--accent-4` | lead `#6ea8fe` | `#6366f1`(20.8) |
+
+`#f5c451` 只有 **deltaE 5.5**——等于没解决。而四个全换会把配色从「金+青+紫+蓝」变成「橙+天蓝+粉+靛」，且 `--accent-2` 与 `--accent-4` 会挤到同一蓝区。
+
+**结论**：「品牌金 = 宜居带金」在默认主题下**是有意的呼应**（首屏金色数字 ↔ 星系最亮的星），不是缺陷。真正的缺陷是换主题后这个呼应崩了。所以只解绑令牌，不改色值。
+
+### 14.3 金色收缩到三种角色
+
+保留：品牌字标 `.topnav__brand`、主 CTA `.btn--primary`、章节标题重音 `.accent-text`。
+
+六处改掉：
+
+| 位置 | 改前 | 改后 |
+|---|---|---|
+| `.funnel__value` 漏斗数值 | 金 | `--text` |
+| `.timeline__year` 时间轴年份 | 金 | `--text-dim` |
+| `.compare__best` 最优值 | 金 | `--accent-2` |
+| `.shortlist--open` 展开态 | 金 | `--text` + `--line-strong` |
+| `.footer__links a:hover` | 金 | `--text` |
+| `.mol-panel__action--on` 收藏态 | 金 | `--accent-2` |
+
+全页金色文字 **23 → 17**（剩下的 17 里，8 个是章节标题重音、2 个首屏大数字、4 个是数据色 `宜居带分子` 的显示、1 个导航激活、1 个字标、1 个 AI 标签）。
+
+### 14.4 limits 去掉卡片外壳（B2-1）
+
+四条否定句原本装在圆角盒子里，与上方普查的四张卡**几何完全一致**（只有边框色不同），连着两屏「四个圆角矩形」。
+
+改为无边框 + 2px 红左竖线：
+
+```css
+.limits-list li {
+  border: 0;
+  border-left: 2px solid rgba(255, 107, 122, 0.5);
+  border-radius: 0;
+  background: none;
+  padding: 14px 0 14px 18px;
+}
+```
+
+「同款矩形」从 5 章降到 4 章。
+
+### 14.5 行宽统一（B2-3）
+
+新增 `--measure: 34em`（≈34 个全角字），只作用于时间轴与方法正文：
+
+| 位置 | 改前 | 改后 |
+|---|---|---|
+| `.timeline__body` | 782px / **55 字/行** | 479px / **30 字/行** |
+| `.method-row__body` | 698px / **50 字/行** | 479px / **25 字/行** |
+
+普查卡片（17 字/行）**不动**——那是四列布局决定的，收窄只会让四列更窄。
+
+> **副作用（待用户判断）**：时间轴卡片宽 782px，正文收到 479px 后右侧空出一块。视觉上是「卡片没装满」。可选解法：卡片本身收窄，或正文左对齐 + 卡片自适应。本轮未处理。
+
+### 14.6 pin 内加章节标题（C2-1）
+
+**问题**：pin 起点时真实标题已在 `-206px`，末端 `-3846px`——3640px 行程里屏幕上没有任何章节标识。
+
+**改法**：在 `.stage-pin` 内加一个精简 caption（`aria-hidden`，因为重复了真实标题）：
+
+```jsx
+<div className="stage-caption" aria-hidden="true">
+  <span className="stage-caption__eyebrow mono">{t('pipeline.eyebrow')}</span>
+  <h3 className="stage-caption__title">{t('pipeline.title.accent')}</h3>
+</div>
+```
+
+实测 pin 全程：
+
+| 进度 | 真实标题 bottom | caption | counter |
+|---|---|---|---|
+| 0 | −44 | 可见 @301px | 01/05 |
+| 0.25 | −1163 | 可见 @301px | 02/05 |
+| 0.5 | −2282 | 可见 @301px | 04/05 |
+| 1 | −4520 | 随 pin 释放上移 | 05/05 |
+
+caption **不用金色**（用 `--text-dim`）——它重复的标题在几百像素之上已经是金色，再加一处就与「收缩」自相矛盾。
+
+堆叠模式（≤767px 或 reduced motion）下 `display: none`：那里没有横向行程，真实标题就在上方，重复即冗余。
+
+### 14.7 验证
+
+```
+npx tsc --noEmit              0 error
+npx vitest run                168/168
+npm run build                 成功（css 44.19 → 44.89 kB）
+scripts/verify.mjs            16/16
+scripts/verify-glow.mjs       12/12
+scripts/verify-stage.mjs      23/23
+```
+
+逐项实测：
+
+- `--data-*` 五个令牌写入成功，`applyTheme` 无条件执行
+- `abyss` 下 `.badge--candidate` 现在与图例圆点**同为 `rgb(55,226,200)`**（修复前是 `rgb(63,214,184)`）
+- limits：`borderTopWidth 0px` / `borderLeftWidth 2px` / `borderRadius 0px` / `background 透明`
+- 行宽：timeline 479px / 30 字/行，method 479px / 25 字/行
+- caption：桌面 `display: block`，手机与 reduced-motion `display: none`
+- `T9b` 轴高从 `27..717.1` 变为 `27..765.5`——时间轴卡片因正文变窄而变高，轴跟着变长，**属预期**
+
+**证据**：`D:\deepseek---dsh----test\.oil-ui\visual-review\shots\33-visual-system\`、`34-caption-scroll\`
+
+### 14.8 没做的
+
+- **B2-2**（compare 并入 stats，九章→八章）：动导航与章节顺序，单独一轮
+- **C2-2**（pin 高度 `auto`，留白 80%→~45%）：会改变 `start: 'top 64px'` 的文档位置，需重跑 T2
+- **C2-3**（计数器 12.5px→14px、进度条 2→3px）
+- **改标题**（stats、method 两个同句式标题）：改文案需单独确认
 
 ---
 
