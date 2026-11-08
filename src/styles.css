@@ -243,6 +243,49 @@ body {
   }
 }
 
+/* Between a phone and a tablet the bar has three things to hold — brand, eight
+   links, three tools — and only ~630px to do it in. The ≤640 block below already
+   solves exactly this by wrapping the links onto their own row; 641–767 has the
+   same problem and was simply never included, so the row overflowed by up to
+   147px at 641 and still 21px at 767.
+
+   Nothing pins at these widths — `StationStage` needs `min-width: 768px` — so
+   the taller bar costs nothing here. The pin starts at `top 64px` and the
+   one-row bar is 56px, so anything taller than 64 would have been pushed under
+   it; that is why this stops at 767 rather than covering the whole overflow. */
+@media (max-width: 767px) {
+  .topnav {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .topnav ul {
+    order: 3;
+    flex-basis: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .topnav ul::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* 768 is where the stage starts pinning, so the bar has to stay 56px there and
+   cannot borrow the two-row answer above. It misses by 20px, and that comes off
+   the horizontal padding — the bar's and the links' — rather than the type size,
+   which would have cost readability to buy back a gap the padding can cover. */
+@media (min-width: 768px) and (max-width: 799px) {
+  .topnav {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .topnav a {
+    padding: 6px 8px;
+  }
+}
+
 /* ---------- top-bar tools: palette, language, GitHub ---------- */
 
 .topnav__tools {
