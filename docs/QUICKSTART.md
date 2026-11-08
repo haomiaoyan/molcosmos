@@ -393,6 +393,8 @@ import { gsap } from 'gsap'                          // ❌
 | 光晕尺寸 | `min(52vmin, 620px)`，居中偏移 `min(26vmin, 310px)` |
 | 光谱带最小段 | `0.33%`（抬升后必须归一化回 100） |
 | 时间轴触发器 | `start: 'top 78%'`, `end: 'bottom 62%'`, `scrub: 0.5` |
+| 子块上间距 | **56px**（`.sub-block`；章节间是 96px） |
+| 导航项数 | **8**（B2-2 合并后；768 档仍溢出 20px，390 档恰好不溢出） |
 
 ---
 
@@ -419,7 +421,8 @@ src/
 │  ├─ SpectrumStrip.tsx     ⭐ 光谱带（按真实比例分段）
 │  ├─ TimelineAxis.tsx      ⭐ 时间轴单轴（scrub + smoothstep）
 │  ├─ HeroStage.tsx         首屏全宽装饰层
-│  ├─ Sections.tsx          流水线 / 漏斗 / 普查
+│  ├─ Sections.tsx          流水线 / 漏斗 / 普查（普查内含对比子块）
+│  ├─ CompareSection.tsx    ⭐ 短名单对比，作为普查的子块（`CompareBlock`）
 │  └─ Sections2.tsx         方法 / 边界 / 页脚 / 导航（含 probe-line，勿动）
 └─ styles.css               单文件，约 3400 行
 

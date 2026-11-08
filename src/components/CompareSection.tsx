@@ -42,13 +42,20 @@ interface Props {
 /**
  * Side-by-side comparison of the shortlisted molecules.
  *
- * Lives in its own section rather than on top of the galaxy: the detail panel
- * already needs most of the stage height, and overlaying a comparison would
- * have covered the very stars the visitor is choosing between.
+ * Not on top of the galaxy: the detail panel already needs most of the stage
+ * height, and overlaying a comparison would have covered the very stars the
+ * visitor is choosing between.
+ *
+ * A sub-block of the census rather than a chapter of its own. The two say the
+ * same kind of thing — "here is what the 600 stars are made of" and then "put
+ * them next to each other" — and as a separate chapter it was 355–405px of
+ * shell (a 96px gap plus a full section head) sitting between a 477px and an
+ * 1107px chapter. It keeps its own lead and its own rhythm; it gives up the
+ * chapter gap, the eyebrow and the h2.
  */
-export function CompareSection({ molecules }: Props) {
+export function CompareBlock({ molecules }: Props) {
   const { t } = useI18n()
-  // Seed from the shortlist so the section is useful on arrival; the visitor can
+  // Seed from the shortlist so the block is useful on arrival; the visitor can
   // still deselect everything, and later additions are never auto-picked.
   const [picked, setPicked] = useState<string[]>(() =>
     molecules.slice(0, COMPARE_LIMIT).map((m) => m.id),
@@ -82,14 +89,13 @@ export function CompareSection({ molecules }: Props) {
   }, [chosen])
 
   return (
-    <section className="section" id="compare" aria-labelledby="compare-title">
-      <header className="section__head">
-        <p className="section__eyebrow mono">{t('compare.eyebrow')}</p>
-        <h2 id="compare-title" className="section__title">
+    <div className="sub-block" id="compare">
+      <header className="sub-block__head">
+        <h3 className="sub-block__title">
           {t('compare.title.pre')}
           <span className="accent-text">{t('compare.title.accent')}</span>
-        </h2>
-        <p className="section__lead">{t('compare.lead')}</p>
+        </h3>
+        <p className="sub-block__lead">{t('compare.lead')}</p>
       </header>
 
       {molecules.length === 0 ? (
@@ -133,12 +139,12 @@ export function CompareSection({ molecules }: Props) {
           ) : (
             <div className="compare">
               <div className="compare__panel">
-                <h3 className="compare__subtitle">{t('compare.structures')}</h3>
+                <h4 className="compare__subtitle">{t('compare.structures')}</h4>
                 <StructuresRow molecules={chosen} />
               </div>
 
               <div className="compare__panel">
-                <h3 className="compare__subtitle">{t('compare.radarAria')}</h3>
+                <h4 className="compare__subtitle">{t('compare.radarAria')}</h4>
                 <RadarOverlay molecules={chosen} />
                 <ul className="compare__legend">
                   {chosen.map((m, i) => (
@@ -151,7 +157,7 @@ export function CompareSection({ molecules }: Props) {
               </div>
 
               <div className="compare__panel compare__panel--wide">
-                <h3 className="compare__subtitle">{t('compare.table')}</h3>
+                <h4 className="compare__subtitle">{t('compare.table')}</h4>
                 <table className="compare__table">
                   <thead>
                     <tr>
@@ -194,7 +200,7 @@ export function CompareSection({ molecules }: Props) {
           )}
         </>
       )}
-    </section>
+    </div>
   )
 }
 

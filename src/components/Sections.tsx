@@ -1,6 +1,7 @@
 import { useMemo, type CSSProperties } from 'react'
 import { useI18n } from '../lib/i18n'
 import type { Molecule } from '../lib/molecule'
+import { CompareBlock } from './CompareSection'
 import { SpectrumStrip } from './SpectrumStrip'
 import { StationStage, type Station } from './StationStage'
 
@@ -88,14 +89,26 @@ export function FunnelSection() {
 }
 
 /**
- * Class distribution of the generated universe.
+ * Class distribution of the generated universe, plus the comparison of
+ * whatever the visitor has shortlisted.
+ *
+ * The two are one chapter because they answer one question in two steps: "what
+ * are these 600 stars made of", then "put the candidates side by side". As
+ * separate chapters the comparison was 355–405px of shell wedged between a
+ * 477px and a 1107px chapter — a breath in the middle of a sentence.
  *
  * `molecules` is the re-scored catalogue, not the fixed 600: dragging the weight
  * sliders moves molecules between classes, and the census has to follow them.
  * That is also why nothing here reads `universe()` directly — the numbers on
  * screen would stop matching the galaxy above.
  */
-export function CosmosStats({ molecules }: { molecules: readonly Molecule[] }) {
+export function CosmosStats({
+  molecules,
+  shortlist,
+}: {
+  molecules: readonly Molecule[]
+  shortlist: Molecule[]
+}) {
   const { t } = useI18n()
   return (
     <section className="section" id="stats" aria-labelledby="stats-title">
@@ -108,6 +121,7 @@ export function CosmosStats({ molecules }: { molecules: readonly Molecule[] }) {
         <p className="section__lead">{t('stats.lead')}</p>
       </header>
       <SpectrumStrip molecules={molecules} />
+      <CompareBlock molecules={shortlist} />
     </section>
   )
 }

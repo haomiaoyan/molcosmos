@@ -38,7 +38,6 @@ const S = {
   'nav.pipeline': ['流水线', 'Pipeline'],
   'nav.funnel': ['漏斗', 'Funnel'],
   'nav.stats': ['普查', 'Census'],
-  'nav.compare': ['对比', 'Compare'],
   'nav.lab': ['沙盒', 'Sandbox'],
   'nav.timeline': ['时间轴', 'Timeline'],
   'nav.method': ['方法', 'Method'],
@@ -331,8 +330,7 @@ const S = {
   ],
   'lab.aria': ['调整打分权重', 'Adjust scoring weights'],
 
-  /* ---------- compare (#compare) ---------- */
-  'compare.eyebrow': ['并排对比', 'Side by side'],
+  /* ---------- compare (sub-block of #stats) ---------- */
   'compare.title.pre': ['把候选分子', 'Put the candidates '],
   'compare.title.accent': ['摆在一起看', 'next to each other'],
   'compare.lead': [

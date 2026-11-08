@@ -828,6 +828,36 @@ body {
   text-wrap: pretty;
 }
 
+/* ---------- sub-blocks ---------- */
+
+/* A chapter's second movement. It belongs to the section above it, so it gives
+   up the 96px chapter gap and the full section head (eyebrow + centred h2),
+   but keeps its own lead and its own vertical rhythm. 56px is the gap two
+   content blocks inside one chapter already use — close enough to read as the
+   same chapter, far enough not to run into the census above it. */
+.sub-block {
+  margin-top: 56px;
+}
+
+.sub-block__head {
+  text-align: left;
+  max-width: 760px;
+  margin: 0 0 18px;
+}
+
+.sub-block__title {
+  font-size: 1.12rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.sub-block__lead {
+  color: var(--text-dim);
+  margin: 0;
+  font-size: 0.92rem;
+  text-wrap: pretty;
+}
+
 /* ---------- cosmos stage ---------- */
 
 .cosmos {

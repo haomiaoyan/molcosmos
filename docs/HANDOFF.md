@@ -928,7 +928,10 @@ node scripts/verify-stage.mjs --url http://127.0.0.1:4415/   # 23/23
 
 ## 15.8 关于 prompt cache（用户特别要求记下）
 
-**结论**：缓存命中 0 是因为**请求前缀变了**，不是「工具调用」本身。
+> ⚠️ **先读下面的修订版**。本节原结论「缓存命中 0 是因为请求前缀变了」**已被实测推翻**，
+> 保留原文只为记录当时的判断过程。真正的结论见「本节已被实测推翻」那一小节。
+
+**原结论（已推翻，留档）**：缓存命中 0 是因为**请求前缀变了**，不是「工具调用」本身。
 
 | 变化 | 破坏缓存 |
 |---|---|
@@ -939,10 +942,136 @@ node scripts/verify-stage.mjs --url http://127.0.0.1:4415/   # 23/23
 
 DSH 侧的 `cacheReadTokens` 完全来自服务端 `usage` 字段，客户端不上报。
 
-**本会话命中的三个具体原因**：中途切过工作目录、GUI URL 每轮都变（`53760` → `51145`）、
-技能目录被整份替换过多次。三者都在消息头部。
+### ⚠️ 本节已被实测推翻（2026-11-08 16:00 修订）
 
-**保持缓存友好的约定**：
-- **不主动切换工作目录**；需要跨目录操作时用绝对路径。
+上一版写「中途切过工作目录」「技能目录被整份替换」——**两条都不成立**，已核实：
+
+| 上一版的说法 | 实测 |
+|---|---|
+| 中途切过 cwd | `session` 记录只有 1 条，`cwd` 全程 `D:\deepseek---dsh----test`，**没变过**。「切过 cwd」是**别的会话**的事 |
+| 技能目录整份替换 | 表象。真正变化的是 **tools 定义 263 → 270**（seq 433，新增 7 个 `guizang_*` / `oil_ui_*`），且此后 3 条 header 哈希相同 |
+| 运行时快照在头部 | `Current runtime context` 在 **`user/message`**（seq 17），是**尾部追加**。系统提示词只有 1 条，不含它 |
+
+**真正的原因**：本会话走 **`trae`** 路由，它返回的 `usage` **完全没有缓存字段**。
+
+| provider | 样本数 | 平均 inputTokens | 平均 cacheReadTokens | 有 cache 字段 |
+|---|---|---|---|---|
+| `trae` | 2026 | **450,600** | **0** | **0 / 2026** |
+| `trae-global` | 220 | 351,860 | 0 | 0 / 220 |
+| `workbuddy` | 8431 | 30,025 | 294,758 | 7930 / 8431 |
+| `workbuddy-global` | 7930 | 2,290 | 127,342 | 7911 / 7930 |
+| `deepseek-v4-1-flash` | 1213 | 11,693 | 153,184 | 1179 / 1213 |
+
+`parseChunkUsage` 的三条 `??` 全部落空 → `cacheReadTokens = 0`。
+**即使服务端真命中了，这条路由也观测不到。**
+
+> 完整排查记录见 **`D:\deepseek---dsh----test\缓存问题说明.md`**（含复现脚本与两个坑：
+> 多帧 zstd 必须按 magic 切帧；别用字符串匹配判断字段存在，会被讨论缓存的正文污染）。
+
+**仍然成立的约定**（这些不因上面的修正而失效）：
+- 工具列表变化、上下文压缩、换 provider 确实会断一次缓存链——只是**不是本次恒为 0 的原因**。
 - 长任务拆成多个会话，每个会话前缀稳定。
 - 少做「整份替换」类的大块注入。
+
+---
+
+## 十六、B2-2 compare 并入 stats（2026-11-08）
+
+**计划**：`docs/plan-b2-2-merge-compare.md`（用户已确认）
+**提交**：见 `git log`，tag `v2.0-p7`
+
+### 16.1 做了什么
+
+九章 → 八章。`#compare` 从独立章节降级为 `#stats` 的第二个子块。
+
+| 文件 | 改动 |
+|---|---|
+| `src/components/CompareSection.tsx` | `CompareSection` → `CompareBlock`；`<section class="section">` → `<div class="sub-block">`；`h2` → `h3`；删 eyebrow；内部三个 `compare__subtitle` 由 `h3` → `h4` |
+| `src/components/Sections.tsx` | `CosmosStats` 多收 `shortlist` prop，内部挂 `<CompareBlock>` |
+| `src/App.tsx` | 删 `CompareSection` 独立挂载与 import |
+| `src/components/Sections2.tsx` | `NAV_SECTIONS` 删 `['compare', 'nav.compare']`；同步改 spy 注释 |
+| `src/lib/i18n.tsx` | 删 `nav.compare` / `compare.eyebrow` 两个 key |
+| `src/styles.css` | 新增 `.sub-block` / `.sub-block__head` / `.sub-block__title` / `.sub-block__lead`（30 行） |
+
+**没动的**：`compare__*` 全部 40 条 CSS 规则、`COMPARE_LIMIT`、`SERIES_COLORS`、`CLASS_COLORS`、`galaxy.ts`。
+
+### 16.2 计划里写错、实测纠正的
+
+| 计划原话 | 实测 |
+|---|---|
+| 「compare 只有 373px」 | 只在 1440 档成立（372.9）；768 是 354.7、390 是 404.9 |
+| 「0.41 屏消失」 | 实际只省 **133 / 115 / 114px**（页面高变化），省的是章节外壳，不是整个 compare |
+| 「星系在上方 6828px」 | 6828px 是到 `#cosmos` 顶部；到**星系舞台**是 **6586px** |
+| 合并后 `#stats` 高度 | 1440: 716（0.80 屏）；768: 844；390: 1084（1.28 屏） |
+
+### 16.3 计划外的发现
+
+**① 导航本来就在溢出**
+
+`ul` 有 `overflow-x: auto`，768 和 390 档**改动前就溢出**（484/413、400/362）。
+
+| 视口 | 改前 | 改后 |
+|---|---|---|
+| 1440 | 1085/1085 不溢出 | 1085/1085 不溢出 |
+| 768 | 484/413 **溢出 71** | 433/413 **仍溢出 20** |
+| 390 | 400/362 **溢出 38** | 362/362 **恰好不溢出** ✅ |
+
+**768 档仍溢出 20px，本批按计划不修**（既有问题，混进来会说不清回归来源）。
+
+**② 标题层级要改两层，不是一层**
+
+计划只写了「`h2` → `h3`」。实施时发现内部三个 `compare__subtitle` 也是 `h3`——子块标题降成 `h3` 后，它们就与父标题同级了。**必须同时降为 `h4`**，否则「正确嵌套」是假的。
+
+实测大纲（短名单非空）：
+
+```
+H2  section__title      这片宇宙的人口普查
+H3  sub-block__title    把候选分子摆在一起看
+H4  compare__subtitle   结构并排
+H4  compare__subtitle   所选分子的性质雷达图展开
+H4  compare__subtitle   性质对比
+```
+
+### 16.4 验证
+
+```
+npx tsc --noEmit              0 error
+npx vitest run                168/168（17 files）
+npm run build                 成功（css 44.89 → 45.24 kB，正好是新增 30 行的量）
+scripts/verify.mjs            16/16
+scripts/verify-glow.mjs       12/12
+scripts/verify-stage.mjs      23/23
+```
+
+**三套脚本零改动、零失败**——与计划预期一致（它们测的是 hero / stage / 390 几何，与 compare 无关）。
+
+额外手工验收 23 条（脚本覆盖不到的）：
+
+| 检查 | 结果 |
+|---|---|
+| 导航 8 项、无「对比」 | ✅ 三档一致 |
+| compare 是 `div.sub-block#compare` 且在 `#stats` 内 | ✅ |
+| 标题 `h3`、无 `h2`、无 eyebrow | ✅ |
+| `margin-top: 56px` | ✅ |
+| 390 档导航不溢出 | ✅ 362/362 |
+| `#compare` 锚点仍可用 | ✅ 滚到 top 0.5 |
+| spy 在 compare 可见时高亮「普查」 | ✅ |
+| 短名单 3 个分子时渲染完整（chips + table + radar） | ✅ |
+| 合并后章节 < 2 屏（有内容） | ✅ 1588px = 1.76 屏 |
+
+**证据**：`.oil-ui/visual-review/shots/38-b22-merge/`（12 张，三档 × 空/有内容）
+
+### 16.5 没做的
+
+- **768 档导航溢出 20px**：既有问题，按计划不修
+- **compare 空态死路**（章节内可操作元素 = 0）：合并**没有**解决它。空态下依然只有一句「回到星系…」，而星系在 6586px 上方。要修得加「去星系」按钮，属新功能
+- **`compare.clear` 死 key**：i18n 里有、组件里没用，属清理
+- **改 stats / method 标题文案**：§15.2 的第 2 项，未动
+
+### 16.6 下一个可以做的
+
+§15.2 剩下的：
+
+1. 改 stats / method 两个标题（9 个章节标题里 8 个是同一句式）
+2. 评审剩余的局部条目
+3. 768 档导航溢出（本轮新发现的既有问题）

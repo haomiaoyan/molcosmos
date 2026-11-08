@@ -121,7 +121,6 @@ const NAV_SECTIONS = [
   ['pipeline', 'nav.pipeline'],
   ['funnel', 'nav.funnel'],
   ['stats', 'nav.stats'],
-  ['compare', 'nav.compare'],
   ['lab', 'nav.lab'],
   ['timeline', 'nav.timeline'],
   ['method', 'nav.method'],
@@ -142,8 +141,8 @@ export function Chrome({ onEnter, themeId, onTheme }: { onEnter: () => void; the
       // Highlight whatever sits under a probe line, rather than "the last section
 // whose top has merely crossed it". The old test let a short section lose to its
 // neighbour before the reader had finished with it: at a 900px viewport anything
-// under 720px tall could never hold the highlight, so compare, stats and method
-// all jumped ahead one item.
+// under 720px tall could never hold the highlight, so stats and method both
+// jumped ahead one item.
       const probe = window.innerHeight * 0.35
       let under = ''
       let lastStarted = 'top'
