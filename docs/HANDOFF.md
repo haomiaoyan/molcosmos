@@ -4,8 +4,10 @@
 > 需求不明确时先用 `/grill-me` 问清楚，不许猜着写。**这是硬约定。**
 >
 > 本文件记录「每批做了什么、踩过什么」。**怎么跑起来、哪些坑不能踩**在 `QUICKSTART.md`。
-> 最后更新：2026-11-08 14:00
-> 当前状态：**SDS v1.2 · 批次 1 / 1.5 / 1.6 / 1.7 / 2 / 3 已实施 · 光晕修复已实施 · 4 条 uiverse 效果已用 · 批次 4 经用户决定作废 · reduced-motion 舞台修复已实施（§十三） · 视觉系统第一批已实施（§十四）**
+> 最后更新：2026-11-08 15:10
+> 当前状态：**HEAD `2daf28e` · tag `v2.0-p6` · 批次 1 / 1.5 / 1.6 / 1.7 / 2 / 3 已实施 · 光晕修复已实施 · 4 条 uiverse 效果已用 · 批次 4 经用户决定作废 · reduced-motion 修复（§十三）· 视觉系统第一批（§十四）· 长舞台收尾（§十五）**
+>
+> 🟢 **新会话先读 §十五「交接区」**，那里有当前进度、剩余待办、文件清单和全部踩过的坑。
 
 ---
 
@@ -19,7 +21,7 @@
 ✅ 阶段 5  SDS 撰写                  → docs/sds-motion-and-hero.md (v1.1, 1185 行)
 ✅ 阶段 6  实测校正                  9 处 SDS 错误修正
 ✅ 阶段 7  交接文档                  本文件
-🟡 阶段 8  实施                     批次 1-2 完成，批次 3-4 未开始
+✅ 阶段 8  实施                     批次 1-3 完成 · 批次 4 作废 · 评审后修复三轮（§十三/§十四/§十五）
 ```
 
 ### 已提交的批次
@@ -34,6 +36,11 @@
 | `8348fd1` | — | 光晕修复（尺寸+死区）+ uiverse 素材文档 |
 | `f25b9e2` | — | **批次 3a** 五关卡横向长舞台 + 宇宙普查光谱带 |
 | `56f6696` | `v2.0-p3` | **批次 3b** 时间轴单轴 + 方法段去卡片 |
+| `ac76ab8` … `e222c23` | — | 批次 4 计划 → 作废；QUICKSTART 与流程硬化 |
+| `74afa8b` | `v2.0-p4` | **reduced-motion 舞台修复**（§十三）：堆叠、数据断言 T8c 逐卡 |
+| `68aec71` | `v2.0-p5` | **视觉系统第一批**（§十四）：数据色解绑、金色收缩、limits 去壳、行宽、pin caption |
+| `427a451` | — | 时间轴列宽按正文尺寸（§14.6b） |
+| `2daf28e` | `v2.0-p6` | **长舞台收尾**（§十五）：caption 时机、计数器加强 |
 
 ### 光晕修复（独立于批次，2026-11-05）
 
@@ -56,10 +63,10 @@
 
 ### 未开始的批次
 
-| 批次 | 内容 | 依赖 |
+| 批次 | 内容 | 状态 |
 |---|---|---|
-| **3** | 后半段重构图：五关卡横向长舞台、光谱带、时间轴轴、方法说明去卡片 | 批次 2 |
-| **4** | 双主题（深空 + 米白 `#ece7dc`/朱砂 `#c2410c`）+ 旧 id 重定向 | 批次 1-3 |
+| **3** | 后半段重构图：五关卡横向长舞台、光谱带、时间轴轴、方法说明去卡片 | ✅ 已完成（§九之二） |
+| **4** | 双主题（深空 + 米白）+ 旧 id 重定向 | ❌ 经用户决定**作废**（§九） |
 
 ---
 
@@ -87,20 +94,35 @@
 
 ### 构建与验收
 
-```bash
-cd "/d/ai项目（自用）/molcosmos"
+**PowerShell（本机是 Windows，`export` 不成立）**
 
-# ⚠️ 必须设置 TEMP，否则 esbuild 会因临时目录权限随机失败（环境问题，非代码问题）
+```powershell
+cd "D:\ai项目（自用）\molcosmos"
+
+> ⚠️ 必须设置 TEMP，否则 esbuild 会因临时目录权限随机失败（环境问题，非代码问题）
+$env:TEMP = "$PWD\.tmp-build"; $env:TMP = $env:TEMP
+New-Item -ItemType Directory -Force .tmp-build | Out-Null
+
+npx tsc --noEmit          # 类型检查
+npx vitest run            # 168 tests / 17 files
+npm run build             # 含 tsc，是唯一构建门禁
+```
+
+**Bash / Git Bash**
+
+```bash
 export TEMP="$(pwd)/.tmp-build" TMP="$(pwd)/.tmp-build"
 mkdir -p .tmp-build
+```
 
-npx tsc --noEmit                       # 类型检查
-npx vitest run                         # 121 tests / 13 files
-npm run build                          # 含 tsc，是唯一构建门禁
+**三套验收脚本**（都需要先起 preview）
 
-# 验收脚本
-npx vite preview --port 4416 --strictPort --host 0.0.0.0
-node scripts/verify.mjs --url http://localhost:4416/
+```powershell
+npx vite preview --port 4415 --strictPort --host 0.0.0.0    # 另开一个终端
+
+node scripts/verify.mjs       --url http://127.0.0.1:4415/
+node scripts/verify-glow.mjs  --url http://127.0.0.1:4415/
+node scripts/verify-stage.mjs --url http://127.0.0.1:4415/
 ```
 
 **`--host 0.0.0.0` 必须加**：不加时 `vite preview` 只监听 IPv6 的 `localhost`，`127.0.0.1` 连不上。
@@ -108,12 +130,12 @@ node scripts/verify.mjs --url http://localhost:4416/
 ### 验收基线（当前应全过）
 
 ```
-tsc             0 error
-vitest          168/168 pass   （17 个测试文件）
-build           成功
-verify.mjs      16/16 PASS     （批次 1-2：首屏几何、舞台铺满）
-verify-glow.mjs 12/12 PASS     （光晕尺寸与死区）
-verify-stage.mjs 23/23 PASS    （批次 3：长舞台、光谱带、时间轴、GitHub 填充、渐变环）
+tsc              0 error
+vitest           168/168 pass   （17 个测试文件）
+build            成功
+verify.mjs       16/16 PASS
+verify-glow.mjs  12/12 PASS
+verify-stage.mjs 23/23 PASS
 ```
 
 **三套脚本都要跑**，只跑 `verify.mjs` 会漏掉后两批的回归。
@@ -401,6 +423,21 @@ npm run build → [vite:esbuild-transpile] remove ...: Access is denied
 **修法**：`export TEMP="$(pwd)/.tmp-build" TMP="$(pwd)/.tmp-build"`，CI（Linux）不受影响。
 
 **`vite preview` 监听问题**：不加 `--host 0.0.0.0` 时只监听 IPv6，`127.0.0.1` 连不上。
+
+---
+
+## 十二、参考
+
+| 文档 | 用途 |
+|---|---|
+| `docs/sds-motion-and-hero.md` | SDS v1.1（1185 行） |
+| `docs/plan-hero-rebuild.md` | 计划 v3 + 决策表 |
+| `docs/sds-measurements.md` | 9 处实测校正 |
+| `docs/plan-reduced-motion-stage.md` | §十三 的计划 |
+| `docs/plan-visual-system.md` | §十四 的计划（含被实测否决的色值方案） |
+| `C:\Users\lenovo\AppData\Local\Temp\synteny-pro\docs\specs\METHODOLOGY-plan-and-sds-review.md` | 方法论 |
+| `D:\tmp\molcosmos-motion-demo\v7.html` | 长舞台已验收实现 |
+| `git show --stat abfa669` | 高亮逻辑修复的证据 |
 
 ---
 
@@ -768,19 +805,144 @@ scripts/verify-stage.mjs      23/23
 ### 14.8 没做的
 
 - **B2-2**（compare 并入 stats，九章→八章）：动导航与章节顺序，单独一轮
-- **C2-2**（pin 高度 `auto`，留白 80%→~45%）：会改变 `start: 'top 64px'` 的文档位置，需重跑 T2
-- **C2-3**（计数器 12.5px→14px、进度条 2→3px）
+- **C2-2**（pin 高度 `auto`，留白 80%→~45%）：**实测不可行，已放弃**，理由见 §14.6e
 - **改标题**（stats、method 两个同句式标题）：改文案需单独确认
+
+> C2-3（计数器加强）与 C2-1 的 caption 时机修复已在下一批完成，见 §十五。
 
 ---
 
-## 十二、参考
+## 十五、交接区 —— 新会话从这里开始
 
-| 文档 | 用途 |
+> 写于 2026-11-08 15:10，HEAD `2daf28e`，tag `v2.0-p6`，工作区干净（只有未跟踪的 `.oil-ui/`）
+
+## 15.1 三十秒摘要
+
+MolCosmos 是一个 AI 制药主题的中文单页站（课程项目），React 18 + TS + 纯 CSS + Three.js + GSAP。
+600 个确定性生成的分子排成三轴旋涡星系，亮度 = 类药潜力打分，下面 10 个章节讲完整叙事。
+
+**当前状态**：功能与视觉都已稳定，168 条单测 + 三套验收脚本全绿。最近三轮在做「评审后的修复」，
+不是新功能。**没有半成品，没有已知的坏状态。**
+
+## 15.2 现在接手该做什么（按优先级）
+
+| # | 事项 | 为什么 | 成本 |
+|---|---|---|---|
+| **1** | **B2-2：compare 并入 stats** | 唯一还没做的计划内条目。compare 只占 0.41 屏，夹在 477px 与 1107px 之间像呼吸中断；且它的空态是死路（章节内可操作元素 = 0，星系在上方 6828px） | 中，要动导航 |
+| **2** | 改 stats / method 两个标题 | 9 个章节标题里 8 个是同一句式（中性前半句 + 金色后半句） | 小，但要改文案 |
+| **3** | 评审剩余的局部条目 | 见 15.5 | 小～中 |
+| 4 | 不做也行 | 见 15.6 | — |
+
+## 15.3 文件清单（最近三轮改过的）
+
+| 文件 | 改了什么 | 提交 |
+|---|---|---|
+| `src/styles.css` | 堆叠条件、数据色、金色收缩、limits、`--measure`、`--timeline-w`、caption、计数器 | `74afa8b` `68aec71` `427a451` `2daf28e` |
+| `src/lib/theme.ts` | 新增 `DATA_COLOR_VARS`，`applyTheme` 无条件写入 | `68aec71` |
+| `src/components/StationStage.tsx` | caption + `IntersectionObserver` 门控 | `68aec71` `2daf28e` |
+| `scripts/verify-stage.mjs` | T8c 改为逐卡检查 | `74afa8b` |
+| `docs/plan-reduced-motion-stage.md` | §十三 的计划（已实施） | `74afa8b` |
+| `docs/plan-visual-system.md` | §十四 的计划（部分实施） | `68aec71` |
+
+**没动过的**：`lib/galaxy.ts` / `molecule.ts` / `search.ts` / `weights.ts` —— 数据核心，107 条测试保护。
+`git diff src/lib/galaxy.ts` 应始终为空。
+
+## 15.4 三条命令验证一切
+
+```powershell
+cd "D:\ai项目（自用）\molcosmos"
+$env:TEMP = "$PWD\.tmp-build"; $env:TMP = $env:TEMP
+New-Item -ItemType Directory -Force .tmp-build | Out-Null
+
+npx tsc --noEmit && npx vitest run && npm run build
+```
+
+期望：`0 error` / `168/168` / `成功`。
+
+然后另开终端起 preview，跑三套：
+
+```powershell
+npx vite preview --port 4415 --strictPort --host 0.0.0.0
+```
+
+```powershell
+node scripts/verify.mjs       --url http://127.0.0.1:4415/   # 16/16
+node scripts/verify-glow.mjs  --url http://127.0.0.1:4415/   # 12/12
+node scripts/verify-stage.mjs --url http://127.0.0.1:4415/   # 23/23
+```
+
+## 15.5 踩过的坑（本轮新增的，老的见 §三 §七）
+
+### 🔴 1. `em` 是相对「使用它的元素」解析的
+
+`--measure: 34em` 在 `:root`（16px）下是 544px，在 `.timeline__body`（0.88rem）下是 479px。
+按 544 算容器宽，卡里就剩 65px 空白。**算容器宽时要把目标元素的字号显式乘进去**：
+
+```css
+--timeline-w: calc(var(--measure) * 0.88 + 40px + 2px + 14px + 22px);
+```
+
+### 🔴 2. `height: auto` 会让 pin 塌掉
+
+`ScrollTrigger` 的 pin 元素如果短于视口，它覆盖不住自己占用的滚动区域，**下方会露出后面的内容**。
+实测 pin 836px → 490px，露出 346px 纯黑。**pin 元素必须撑满视口高度。**
+
+### 🔴 3. 无条件渲染的重复标题
+
+从导航跳进某章时，章节标题还在视口里。此时再渲染一份精简标题 = 同屏两个。
+**必须用 `IntersectionObserver` 观察真实标题，滚出后才渲染。**
+
+### 🟠 4. CDP 的 `--hide-scrollbars` 会改变布局测量
+
+截图时开了它，`--sbw` 变 0，卡片从 704px 变 719px，误判成回归。
+**测量布局时不要加 `--hide-scrollbars`。**
+
+### 🟠 5. 断言名 ≠ 断言内容
+
+`verify-stage.mjs` 的 T8c 叫 "all five cards still present and visible"，
+实际只测了 `document.querySelector('.station')` 第一张卡。
+**三张卡被裁掉它一直显示 PASS。** 改断言时先回退代码验证它真的会红。
+
+### 🟠 6. 候选色靠「挪一档」区分不开
+
+想把强调色与数据色拉开，试了 20 组，10 组 deltaE < 15（人眼难辨）。
+`#f5c451` vs `#ffd47e` 只有 **5.5**。要达标必须跨色相家族 = 换配色。
+**结论：默认主题下「品牌金 = 宜居带金」是有意呼应，不是缺陷；只解绑令牌，不改色值。**
+
+## 15.6 明确不做的
+
+- **C2-2 长舞台 80% 留白**：实测不可行（坑 2），且加高卡片最多到 41% 填充。
+  80% 是「5 张 380px 卡在 1440px 舞台」的结构必然。用户已确认接受。
+- **批次 4 双主题**：用户明确作废。
+- **改 `CLASS_COLORS`**：数据编码色，107 条测试保护。
+- **`--text-mute` 对比度 3.89:1**：用户知情并选择不改（已在 §十四 局部处理掉几处最要紧的）。
+
+## 15.7 用户的工作方式（重要）
+
+1. **§5.0 是硬约定**：计划 → 用户审核 → 用户确认 → 实施。**没听到「确认」不许动代码。**
+2. 需求不明确时用 `grilling` 问，**不许猜**。
+3. 用户会**否决方案里的具体推荐**（本轮 `#f5c451` 就被实测推翻了）。
+   计划里要写清取舍，不要只给一个数。
+4. 用户偏好：**实测数据 > 推理**。本项目几乎每个决策都带 `measured` 字样。
+5. 用户会要求**版本记录**：每批必须更新 HANDOFF + 打 tag。
+
+## 15.8 关于 prompt cache（用户特别要求记下）
+
+**结论**：缓存命中 0 是因为**请求前缀变了**，不是「工具调用」本身。
+
+| 变化 | 破坏缓存 |
 |---|---|
-| `docs/sds-motion-and-hero.md` | SDS v1.1（1185 行） |
-| `docs/plan-hero-rebuild.md` | 计划 v3 + 决策表 |
-| `docs/sds-measurements.md` | 9 处实测校正 |
-| `C:\Users\lenovo\AppData\Local\Temp\synteny-pro\docs\specs\METHODOLOGY-plan-and-sds-review.md` | 方法论 |
-| `D:\tmp\molcosmos-motion-demo\v7.html` | 长舞台已验收实现 |
-| `git show --stat abfa669` | 高亮逻辑修复的证据 |
+| 尾部追加工具结果 | ❌ 不破坏（这是缓存最擅长的场景） |
+| 改 system prompt / runtime context 头部 | ✅ 破坏 |
+| 改 cwd | ✅ 破坏 |
+| 上下文压缩 / 换 provider | ✅ 破坏 |
+
+DSH 侧的 `cacheReadTokens` 完全来自服务端 `usage` 字段，客户端不上报。
+
+**本会话命中的三个具体原因**：中途切过工作目录、GUI URL 每轮都变（`53760` → `51145`）、
+技能目录被整份替换过多次。三者都在消息头部。
+
+**保持缓存友好的约定**：
+- **不主动切换工作目录**；需要跨目录操作时用绝对路径。
+- 长任务拆成多个会话，每个会话前缀稳定。
+- 少做「整份替换」类的大块注入。

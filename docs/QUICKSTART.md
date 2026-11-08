@@ -2,7 +2,9 @@
 
 > 目标：**30 秒内知道怎么跑起来，5 分钟内知道哪些坑不能踩。**
 > 不含历史，不含决策过程。那些在 `HANDOFF.md`。
-> 最后核对：2026-11-08，HEAD `e222c23` + 未提交的 reduced-motion 舞台修复（见 HANDOFF §十三）
+> 最后核对：2026-11-08，HEAD `2daf28e`，tag `v2.0-p6`，工作区干净
+>
+> 📌 **要接着干活，先读 `HANDOFF.md` §十五「交接区」**：当前进度、剩余待办、文件清单、本轮踩的坑。
 
 ---
 
@@ -230,6 +232,36 @@ input.dispatchEvent(new Event('input',{bubbles:true}))   // ✅
 对应断言 `verify-stage.mjs` T8c 是**逐卡**检查可见宽度（边界取 `.stage-window` 而不是视口）。
 它之前只测第一张卡，所以这个 bug 一直显示 PASS——改断言时别退回去。
 
+### 🔴 12. `em` 是相对「使用它的元素」字号
+
+`--measure: 34em` 在 `:root`（16px）下是 **544px**，在 `.timeline__body`（`0.88rem` = 14.08px）下是 **479px**。
+
+拿 544 去算容器宽度，卡里就会剩 65px 空白。**算容器宽时要把目标元素的字号显式乘进去**：
+
+```css
+--timeline-w: calc(var(--measure) * 0.88 + 40px + 2px + 14px + 22px);
+```
+
+### 🔴 13. `height: auto` 会让 pin 塌掉
+
+`ScrollTrigger` 的 pin 元素如果短于视口，**它覆盖不住自己占用的滚动区域**，下方会露出后面的章节。
+
+实测：pin 从 836px 掉到 490px，露出 **346px 纯黑**，漏斗章节从缝里钻出来。
+**pin 元素必须撑满视口高度**（`calc(100vh - 64px)`），想减留白只能从内容入手。
+
+### 🟠 14. 章节标题会重复
+
+从导航跳进某章时，章节标题还在视口里（实测 `headingTop 127px`）。此时再渲染一份精简标题，
+就是同屏两个同样的标题。
+
+**用 `IntersectionObserver` 观察真实标题，它完全滚出视口后才渲染**（`StationStage.tsx` 的 `headingGone`）。
+不要用滚动回调：页面滚动已由 ScrollTrigger 驱动，再加一个监听会在主线程打架。
+
+### 🟠 15. CDP 的 `--hide-scrollbars` 会污染布局测量
+
+截图时开了它，`--sbw` 变 0，卡片从 704px 变 719px，会被误判成回归。
+**测量布局时不要加 `--hide-scrollbars`。**
+
 ---
 
 ## 四、不能动的东西
@@ -237,7 +269,7 @@ input.dispatchEvent(new Event('input',{bubbles:true}))   // ✅
 | 文件 / 位置 | 原因 |
 |---|---|
 | `lib/galaxy.ts` / `molecule.ts` / `search.ts` / `weights.ts` | 数据正确性核心，107 条测试保护 |
-| `CLASS_COLORS` 的色值 | 那是**数据编码色**，不是主题色 |
+| `CLASS_COLORS` 的色值 | 那是**数据编码色**，不是主题色。徽章走 `--data-*`，不要再挂 `--accent-*` |
 | `Sections2.tsx` 的 probe-line 高亮（`const probe = ...` 那段循环） | 修过"短章节提前让出高亮"的 bug，删了会复现 |
 | 每批结束的 `npm run build` | CI 会拒 |
 
