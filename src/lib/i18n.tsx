@@ -218,8 +218,8 @@ const S = {
 
   /* ---------- census ---------- */
   'stats.eyebrow': ['宇宙普查', 'Universe census'],
-  'stats.title.pre': ['这片宇宙的', 'A census of '],
-  'stats.title.accent': ['人口普查', 'this universe'],
+  'stats.title.pre': ['这片星空，', 'In this sky, '],
+  'stats.title.accent': ['宜居带很窄', 'the habitable band is narrow'],
   'stats.lead': [
     '600 颗星，四类分子。宜居带分子只占极少数——这就是为什么 AI 不会「随机抽一个分子试试」，而是要学着往亮的地方走。',
     '600 stars, four classes. Goldilocks molecules are a small minority — which is exactly why AI does not “pick a molecule at random and try it”, but learns to walk towards the light.',
@@ -243,8 +243,8 @@ const S = {
 
   /* ---------- method ---------- */
   'method.eyebrow': ['方法说明', 'How it works'],
-  'method.title.pre': ['这片宇宙是', 'How this universe '],
-  'method.title.accent': ['怎么算出来的', 'is computed'],
+  'method.title.pre': ['这些数字，', 'These numbers, '],
+  'method.title.accent': ['凭什么可信', 'and why they hold up'],
   'method.lead': [
     '页面上每一个数字都可以复核。这里列出全部计算口径——课程演示用，不是任何真实药物研发的复现。',
     'Every number on this page can be recomputed. Here are all the conventions — for a course demo, not a reproduction of any real drug programme.',
