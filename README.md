@@ -216,4 +216,6 @@ src/
 
 ## 📄 License
 
-MIT
+MIT —— 详见 [LICENSE](./LICENSE)。
+
+若在教学或研究中使用本项目，请按 [CITATION.cff](./CITATION.cff) 中的条目引用。

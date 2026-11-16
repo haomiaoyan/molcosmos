@@ -1,6 +1,7 @@
 node_modules
 dist
 *.local
+.tmp
 
 # Scratch space: build temp dirs, headless-browser profiles and screenshots
 .tmp-*

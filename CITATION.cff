@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: If you use this software in teaching or research, please cite it as below.
+title: MolCosmos
+abstract: An interactive three-dimensional visualization of chemical-space sampling and drug-likeness scoring for AI-driven drug discovery education.
+type: software
+authors:
+  - name: haomiaoyan
+version: 0.1.0
+license: MIT
+repository-code: https://github.com/haomiaoyan/molcosmos
+url: https://haomiaoyan.github.io/molcosmos/
+keywords:
+  - cheminformatics
+  - drug discovery
+  - chemical space
+  - visualization
+  - education
