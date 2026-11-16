@@ -10,6 +10,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "experiment": "node scripts/weight-sensitivity.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
