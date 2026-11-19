@@ -97,11 +97,21 @@
 | UI | React 18 |
 | 3D | Three.js 0.169 + @react-three/fiber 8 + drei 9 |
 | 星点渲染 | 自写 GLSL 着色器（双层核心/光晕、加色混合、闪烁） |
-| 测试 | Vitest 2（107 个单元测试） |
-| 样式 | 纯 CSS（5 套配色变量主题、玻璃拟态、霓虹光晕、无 UI 框架） |
+| 测试 | Vitest 2（168 个单元测试 / 17 个测试文件） |
+| 样式 | 纯 CSS 为主体（5 套配色变量主题、玻璃拟态、霓虹光晕）+ `src/components/rb/` 下 5 个 React Bits 组件的贴入源码（自带 CSS 已改名隔离） |
 | 国际化 | 自写轻量 i18n（`[zh, en]` 字典 + Context），无第三方依赖 |
 
 **零后端、零真实数据、零外部 API**——全部在浏览器内确定性计算。
+
+### 关于 React Bits 组件（`src/components/rb/`）
+
+首屏与章节的入场、按钮反馈、卡片聚光来自 5 个 [React Bits](https://www.reactbits.dev/) 免费 `JS-CSS` 组件：`FadeContent`、`StarBorder`、`Magnet`、`ClickSpark`、`SpotlightCard`。它们是**把源码贴进仓库**，不是运行时依赖，没有引入 `motion` 或 GSAP 付费插件。
+
+- **React 18 保持不变**：项目的 `@react-three/fiber` 8.x 要求 `react >=18 <19`，因此不使用要求 React 19 的组件库（如 Astryx）。
+- **组件清单与适配规则**写在 `scripts/land-rb.mjs`（可重复落地，缺少缓存时自动从 registry 拉取）；类型边界在 `src/components/rb/index.ts`。
+- **主题色**通过 `resolveColor()` 在渲染时读取当前 CSS 变量，5 套配色切换时光效会跟着变。
+- **尊重减少动态效果**：所有组件在 `prefers-reduced-motion` 下停止动画，且 `FadeContent` 改用纯 `opacity`（不用 gsap 的 `autoAlpha`），避免 `visibility:hidden` 把屏外标题移出无障碍树。
+- **gsap 在 `main.tsx` 启动时注册**：`FadeContent` 的滚动触发跑在 layout effect，早于 `App` 的 `useEffect`，否则未注册的 `ScrollTrigger` 会抛错。
 
 ---
 
@@ -117,10 +127,20 @@ npm run dev        # http://localhost:5173
 ### 测试与构建
 
 ```bash
-npm run test       # 107 个单元测试
+npm run test       # 168 个单元测试
 npm run build      # 类型检查 + 生产构建
 npm run preview    # 预览构建产物 http://localhost:4173
+npm run experiment # 权重敏感性数值实验，输出 CSV
 ```
+
+浏览器级验收（会自己启动无头 Chrome，需要本地 preview 已运行）：
+
+```bash
+npx vite preview --host 127.0.0.1 --port 4400 --strictPort
+node scripts/verify.mjs --url http://127.0.0.1:4400/
+```
+
+当前为 **16 / 16 断言通过**（三档视口无横向溢出、无运行时异常、首屏高度与舞台几何）。
 
 > **Windows 用户注意**：本机 `vite build` 可能报
 > `remove C:\Users\...\Temp\esbuild-xxx: Access is denied.`
@@ -172,6 +192,11 @@ src/
 │   ├── i18n.tsx          # 中英双语字典 + Provider + useI18n
 │   └── theme.ts          # 5 套配色变量 + 持久化 + applyTheme
 ├── components/
+│   ├── rb/               # 贴入的 5 个 React Bits 组件 + 类型边界 + 主题取色 + 样式隔离
+│   │   ├── SectionHead.tsx      # 7 个章节标题的统一滚动入场包装
+│   │   ├── index.ts             # 对外类型边界（上游 JSX 为 ts-nocheck）
+│   │   ├── themeColor.ts        # 把 CSS 变量解析成 canvas 可用的具体色值
+│   │   └── styles/              # rb.css / hero-rb.css / sections-rb.css
 │   ├── CosmosScene.tsx   # 3D 主场景：星点着色器、宜居带光环、尘埃层、选中标记
 │   ├── CosmosControls.tsx# 搜索框 + 随机漫游
 │   ├── TopnavTools.tsx   # 配色选择 / 语言切换 / GitHub 入口
@@ -188,15 +213,23 @@ src/
 ├── config.ts             # 引用与文案配置
 ├── App.tsx               # 状态编排 + 深链 + 键盘 + 短名单
 └── styles.css            # 深空主题全套样式
+
+scripts/
+├── verify.mjs              # 浏览器级验收（CDP 直连，16 断言 × 3 视口）
+├── land-rb.mjs             # 可重复落地 React Bits 组件并做本地适配
+├── wrap-section-heads.mjs  # 把章节标题批量换成 SectionHead
+├── weight-sensitivity.mjs  # 权重敏感性数值实验
+└── inspect-*.mjs           # 入场/降级/控制台的 DOM 检查辅助脚本
 ```
 
 ---
 
 ## ✅ 质量指标
 
-- **107 / 107** 单元测试通过（10 个测试文件）
-- TypeScript 严格模式零错误
-- 生产构建约 1,084 KB（gzip ≈ 308 KB）
+- **168 / 168** 单元测试通过（17 个测试文件）
+- TypeScript 严格模式零错误（`npm run build` 会先跑 `tsc --noEmit`）
+- 浏览器级验收 **16 / 16** 断言通过（1440 / 768 / 390 三档视口）
+- 生产构建约 1,257 KB JS（gzip ≈ 375 KB）+ 48 KB CSS（gzip ≈ 10 KB）
 - 全部数据本地确定性生成，无网络请求
 
 ---

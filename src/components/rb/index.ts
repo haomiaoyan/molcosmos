@@ -88,7 +88,7 @@ export interface MagnetProps extends WithCommon {
 }
 
 export interface FadeContentProps extends WithCommon {
-  as?: 'div' | 'h1' | 'h2' | 'p' | 'span' | 'section' | 'header'
+  as?: 'div' | 'h1' | 'h2' | 'p' | 'span' | 'section' | 'header' | 'ol' | 'ul'
   effect?: string
   blur?: boolean
   duration?: number

@@ -25,10 +25,10 @@
   border-radius: inherit;
 }
 
-/* FadeContent wraps each section head; it must not change the header's box. */
-.section__head {
-  margin: 0;
-}
+/* FadeContent replaces the header tag via `as`, so the original
+   .section__head box (text-align / max-width / margin) is unchanged.
+   Do not add a margin override here: B2 briefly set margin:0 and lost the
+   44px section gutter plus the auto centering. */
 
 @media (prefers-reduced-motion: reduce) {
   .timeline__card.rb-spotlight-card:hover {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CLASS_COLORS, CLASS_LABEL_KEYS } from '../lib/galaxy'
 import { useI18n, type StringKey } from '../lib/i18n'
+import { FadeContent } from './rb'
 import {
   ELEMENT_COLORS,
   layoutStructure,
@@ -90,13 +91,13 @@ export function CompareBlock({ molecules }: Props) {
 
   return (
     <div className="sub-block" id="compare">
-      <header className="sub-block__head">
+      <FadeContent as="header" className="sub-block__head" trigger="scroll" duration={0.6} once>
         <h3 className="sub-block__title">
           {t('compare.title.pre')}
           <span className="accent-text">{t('compare.title.accent')}</span>
         </h3>
         <p className="sub-block__lead">{t('compare.lead')}</p>
-      </header>
+      </FadeContent>
 
       {molecules.length === 0 ? (
         <p className="compare__empty muted">{t('compare.empty')}</p>

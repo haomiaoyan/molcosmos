@@ -5,6 +5,7 @@ import { prefersReducedMotion } from '../lib/motion'
 import { progressSource } from '../lib/useReveal'
 import { useI18n } from '../lib/i18n'
 import { SectionHead } from './rb/SectionHead'
+import { FadeContent } from './rb'
 import type { ThemeId } from '../lib/theme'
 import { TopnavTools } from './TopnavTools'
 
@@ -31,7 +32,7 @@ export function MethodSection() {
         </h2>
         <p className="section__lead">{t('method.lead')}</p>
       </SectionHead>
-      <ol className="method-list">
+      <FadeContent as="ol" className="method-list" trigger="scroll" stagger={0.12} duration={0.6} once>
         {steps.map(([title, body], i) => (
           <li key={title} className="method-row">
             {/* Hidden from assistive tech on purpose: the `<ol>` already
@@ -47,7 +48,7 @@ export function MethodSection() {
             </div>
           </li>
         ))}
-      </ol>
+      </FadeContent>
       <ul className="citation-list">
         <li>{t('cite.chemicalSpace')}</li>
         <li>{t('cite.lipinski')}</li>
@@ -75,14 +76,14 @@ export function LimitsSection() {
           {t('limits.title.post')}
         </h2>
       </SectionHead>
-      <ul className="limits-list">
+      <FadeContent as="ul" className="limits-list" trigger="scroll" stagger={0.1} duration={0.6} once>
         {items.map(([strong, body]) => (
           <li key={strong}>
             <strong>{t(strong)}</strong>
             {t(body)}
           </li>
         ))}
-      </ul>
+      </FadeContent>
     </section>
   )
 }
