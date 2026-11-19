@@ -1,0 +1,39 @@
+/* B1 · React Bits integration overrides.
+   Loaded after rb.css so these win over the vendored single-class rules. */
+
+/* ClickSpark's root is a plain div; restore the actions row's flex layout. */
+.hero .hero__actions > div:first-child {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+  width: 100%;
+  height: auto;
+}
+
+/* StarBorder ships its own padding/weight/radius. Keep the original CTA look. */
+.hero .hero__cta {
+  padding: 14px 30px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  border-radius: 999px;
+  border: 0;
+  box-shadow: 0 10px 34px rgb(var(--accent-rgb) / 0.3);
+}
+
+.hero .hero__cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 44px rgb(var(--accent-rgb) / 0.42);
+}
+
+/* The travelling light is decorative; keep it behind the label. */
+.hero .hero__cta .rb-star-border__light {
+  z-index: -1;
+}
+
+/* Reduced motion: no hover lift, no magnet transform. */
+@media (prefers-reduced-motion: reduce) {
+  .hero .hero__cta:hover {
+    transform: none;
+  }
+}

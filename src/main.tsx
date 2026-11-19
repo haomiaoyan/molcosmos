@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client'
 import App from './App'
 import { applyTheme, loadTheme } from './lib/theme'
 import './styles.css'
+import './components/rb/styles/rb.css'
+import './components/rb/styles/hero-rb.css'
 
 // Paint the saved palette before the first render so a returning visitor never
 // sees a flash of the default theme.

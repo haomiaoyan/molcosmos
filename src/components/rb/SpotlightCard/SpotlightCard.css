@@ -1,0 +1,52 @@
+/* React Bits SpotlightCard: block renamed to .rb-spotlight-card */
+.rb-spotlight-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 2rem;
+  border-radius: 1.5rem;
+  background-color: var(--spotlight-card-surface);
+  box-shadow: var(--spotlight-card-shadow);
+}
+
+.rb-spotlight-card__light,
+.rb-spotlight-card__grain,
+.rb-spotlight-card__border,
+.rb-spotlight-card__edge {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.rb-spotlight-card__light,
+.rb-spotlight-card__grain {
+  z-index: -1;
+  opacity: 0;
+}
+
+.rb-spotlight-card__grain {
+  background-size: 160px 160px;
+  mix-blend-mode: overlay;
+}
+
+.rb-spotlight-card__border,
+.rb-spotlight-card__edge {
+  z-index: 1;
+  padding: 1px;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+}
+
+.rb-spotlight-card__border {
+  background: var(--spotlight-card-border);
+}
+
+.rb-spotlight-card__edge {
+  opacity: 0;
+}
