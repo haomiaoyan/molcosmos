@@ -131,13 +131,13 @@ const getLooks = (effect, blur, initialOpacity) => {
   const soften = amount => `blur(${amount}px)`;
   if (effect === 'focus') {
     return [
-      { from: { autoAlpha: initialOpacity }, to: { autoAlpha: 1 }, share: 0.6 },
+      { from: { opacity: initialOpacity }, to: { opacity: 1 }, share: 0.6 },
       { from: { filter: soften(12 + blur), scale: 0.97 }, to: { filter: soften(0), scale: 1 }, share: 1 }
     ];
   }
   if (effect === 'develop') {
     return [
-      { from: { autoAlpha: initialOpacity }, to: { autoAlpha: 1 }, share: 0.5 },
+      { from: { opacity: initialOpacity }, to: { opacity: 1 }, share: 0.5 },
       {
         from: { filter: `grayscale(1) contrast(0.55) brightness(1.3) ${soften(blur)}` },
         to: { filter: `grayscale(0) contrast(1) brightness(1) ${soften(0)}` },
@@ -147,10 +147,10 @@ const getLooks = (effect, blur, initialOpacity) => {
   }
   if (blur > 0) {
     return [
-      { from: { autoAlpha: initialOpacity, filter: soften(blur) }, to: { autoAlpha: 1, filter: soften(0) }, share: 1 }
+      { from: { opacity: initialOpacity, filter: soften(blur) }, to: { opacity: 1, filter: soften(0) }, share: 1 }
     ];
   }
-  return [{ from: { autoAlpha: initialOpacity }, to: { autoAlpha: 1 }, share: 1 }];
+  return [{ from: { opacity: initialOpacity }, to: { opacity: 1 }, share: 1 }];
 };
 
 const FadeContent = ({

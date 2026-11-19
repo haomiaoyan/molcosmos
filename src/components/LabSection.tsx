@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CLASS_COLORS, rescoreUniverse, statsFor } from '../lib/galaxy'
 import { useI18n } from '../lib/i18n'
+import { SectionHead } from './rb/SectionHead'
 import type { MoleculeClass } from '../lib/molecule'
 import {
   DEFAULT_WEIGHTS,
@@ -49,14 +50,14 @@ export function LabSection({ weights, onChange }: Props) {
 
   return (
     <section className="section" id="lab" aria-labelledby="lab-title">
-      <header className="section__head">
+      <SectionHead>
         <p className="section__eyebrow mono">{t('lab.eyebrow')}</p>
         <h2 id="lab-title" className="section__title">
           {t('lab.title.pre')}
           <span className="accent-text">{t('lab.title.accent')}</span>
         </h2>
         <p className="section__lead">{t('lab.lead')}</p>
-      </header>
+      </SectionHead>
 
       <div className="lab">
         <div className="lab__controls" role="group" aria-label={t('lab.aria')}>

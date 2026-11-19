@@ -41,7 +41,16 @@ export interface StarBorderProps extends WithCommon {
 
 export interface SpotlightCardProps extends WithCommon {
   spotlightColor?: string
-  radius?: number
+  intensity?: number
+  spotlightSize?: number
+  softness?: number
+  shape?: string
+  borderGlow?: number
+  proximity?: number
+  smoothing?: number
+  ambient?: boolean
+  flare?: boolean
+  grain?: number
   theme?: 'dark' | 'light'
 }
 
@@ -79,7 +88,7 @@ export interface MagnetProps extends WithCommon {
 }
 
 export interface FadeContentProps extends WithCommon {
-  as?: 'div' | 'h1' | 'h2' | 'p' | 'span' | 'section'
+  as?: 'div' | 'h1' | 'h2' | 'p' | 'span' | 'section' | 'header'
   effect?: string
   blur?: boolean
   duration?: number

@@ -1,6 +1,8 @@
 import { useLayoutEffect, useRef } from 'react'
 import { gsap, registerGsap, ScrollTrigger } from '../lib/gsap'
 import { useI18n, type StringKey } from '../lib/i18n'
+import { SpotlightCard } from './rb'
+import { resolveColor } from './rb/themeColor'
 
 /**
  * The five milestones on one axis.
@@ -74,6 +76,8 @@ export function revealAt(index: number, count: number, progress: number): number
 
 export function TimelineAxis({ nodes }: { nodes: readonly AxisNode[] }) {
   const { t } = useI18n()
+  // Read at render time so the spotlight follows the active theme.
+  const accent = resolveColor('--accent', '#ffd47e')
   const rootRef = useRef<HTMLDivElement | null>(null)
   const listRef = useRef<HTMLOListElement | null>(null)
   const lineRef = useRef<HTMLSpanElement | null>(null)
@@ -239,11 +243,11 @@ export function TimelineAxis({ nodes }: { nodes: readonly AxisNode[] }) {
             className={`timeline__item${node.foundation ? ' timeline__item--foundation' : ''}`}
           >
             <span className="timeline__marker" aria-hidden="true" />
-            <div className="timeline__card">
+            <SpotlightCard className="timeline__card" spotlightColor={accent} grain={0} borderGlow={0.4}>
               <p className="timeline__year mono">{t(node.year)}</p>
               <h3 className="timeline__title">{t(node.title)}</h3>
               <p className="timeline__body">{t(node.body)}</p>
-            </div>
+            </SpotlightCard>
           </li>
         ))}
       </ol>

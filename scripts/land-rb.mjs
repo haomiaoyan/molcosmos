@@ -85,6 +85,10 @@ for (const name of NAMES) {
           /(<Tag ref=\{ref\}[\s\S]*?\{children\}\n)\s*<\/div>/,
           '$1    </Tag>',
         )
+        // gsap's autoAlpha also toggles visibility, which removes off-screen
+        // headings from the accessibility tree. Plain opacity keeps them
+        // reachable and matches this app's own useReveal() convention.
+        content = content.replaceAll('autoAlpha', 'opacity')
       }
 
       // Palette must be read at render time: applyTheme() runs in an effect.

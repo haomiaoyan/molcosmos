@@ -1,0 +1,37 @@
+/* B2 · narrative sections and the timeline cards.
+   Loaded after rb.css so these win over the vendored single-class rules. */
+
+/* SpotlightCard ships 2rem padding + its own surface. The timeline card has an
+   established geometry (border, radius, translucent panel, hover shift) that
+   must stay exactly as it was; keep only the light/edge decoration. */
+.timeline__card.rb-spotlight-card {
+  padding: 16px 20px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: none;
+}
+
+.timeline__card.rb-spotlight-card:hover {
+  border-color: rgb(var(--accent-rgb) / 0.4);
+  transform: translateX(3px);
+}
+
+/* The decorative layers sit behind the copy; the edge glow must not tint it. */
+.timeline__card .rb-spotlight-card__light,
+.timeline__card .rb-spotlight-card__grain,
+.timeline__card .rb-spotlight-card__border,
+.timeline__card .rb-spotlight-card__edge {
+  border-radius: inherit;
+}
+
+/* FadeContent wraps each section head; it must not change the header's box. */
+.section__head {
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timeline__card.rb-spotlight-card:hover {
+    transform: none;
+  }
+}

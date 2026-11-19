@@ -1,4 +1,5 @@
 import { useI18n } from '../lib/i18n'
+import { SectionHead } from './rb/SectionHead'
 import { TimelineAxis, type AxisNode } from './TimelineAxis'
 
 /**
@@ -25,14 +26,14 @@ export function TimelineSection() {
 
   return (
     <section className="section" id="timeline" aria-labelledby="timeline-title">
-      <header className="section__head">
+      <SectionHead>
         <p className="section__eyebrow mono">{t('timeline.eyebrow')}</p>
         <h2 id="timeline-title" className="section__title">
           {t('timeline.title.pre')}
           <span className="accent-text">{t('timeline.title.accent')}</span>
         </h2>
         <p className="section__lead">{t('timeline.lead')}</p>
-      </header>
+      </SectionHead>
 
       <TimelineAxis nodes={NODES} />
 

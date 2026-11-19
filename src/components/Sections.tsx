@@ -1,5 +1,6 @@
 import { useMemo, type CSSProperties } from 'react'
 import { useI18n } from '../lib/i18n'
+import { SectionHead } from './rb/SectionHead'
 import type { Molecule } from '../lib/molecule'
 import { CompareBlock } from './CompareSection'
 import { SpectrumStrip } from './SpectrumStrip'
@@ -23,14 +24,14 @@ export function PipelineSection() {
   const { t } = useI18n()
   return (
     <section className="section" id="pipeline" aria-labelledby="pipeline-title">
-      <header className="section__head">
+      <SectionHead>
         <p className="section__eyebrow mono">{t('pipeline.eyebrow')}</p>
         <h2 id="pipeline-title" className="section__title">
           {t('pipeline.title.pre')}
           <span className="accent-text">{t('pipeline.title.accent')}</span>
         </h2>
         <p className="section__lead">{t('pipeline.lead')}</p>
-      </header>
+      </SectionHead>
       {/* The stage replaces the five-card grid; the head above stays put so the
           chapter still announces itself before it starts moving. */}
       <StationStage stations={PIPELINE} />
@@ -52,14 +53,14 @@ export function FunnelSection() {
   )
   return (
     <section className="section" id="funnel" aria-labelledby="funnel-title">
-      <header className="section__head">
+      <SectionHead>
         <p className="section__eyebrow mono">{t('funnel.eyebrow')}</p>
         <h2 id="funnel-title" className="section__title">
           {t('funnel.title.pre')}
           <span className="accent-text">{t('funnel.title.accent')}</span>
         </h2>
         <p className="section__lead">{t('funnel.lead')}</p>
-      </header>
+      </SectionHead>
       <div className="funnel">
         {tiers.map((tier, i) => (
           <div
@@ -112,14 +113,14 @@ export function CosmosStats({
   const { t } = useI18n()
   return (
     <section className="section" id="stats" aria-labelledby="stats-title">
-      <header className="section__head">
+      <SectionHead>
         <p className="section__eyebrow mono">{t('stats.eyebrow')}</p>
         <h2 id="stats-title" className="section__title">
           {t('stats.title.pre')}
           <span className="accent-text">{t('stats.title.accent')}</span>
         </h2>
         <p className="section__lead">{t('stats.lead')}</p>
-      </header>
+      </SectionHead>
       <SpectrumStrip molecules={molecules} />
       <CompareBlock molecules={shortlist} />
     </section>

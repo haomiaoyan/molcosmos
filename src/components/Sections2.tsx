@@ -4,6 +4,7 @@ import { gsap, refreshTriggersWhenSettled, registerGsap, ScrollTrigger } from '.
 import { prefersReducedMotion } from '../lib/motion'
 import { progressSource } from '../lib/useReveal'
 import { useI18n } from '../lib/i18n'
+import { SectionHead } from './rb/SectionHead'
 import type { ThemeId } from '../lib/theme'
 import { TopnavTools } from './TopnavTools'
 
@@ -22,14 +23,14 @@ export function MethodSection() {
   ] as const
   return (
     <section className="section" id="method" aria-labelledby="method-title">
-      <header className="section__head">
+      <SectionHead>
         <p className="section__eyebrow mono">{t('method.eyebrow')}</p>
         <h2 id="method-title" className="section__title">
           {t('method.title.pre')}
           <span className="accent-text">{t('method.title.accent')}</span>
         </h2>
         <p className="section__lead">{t('method.lead')}</p>
-      </header>
+      </SectionHead>
       <ol className="method-list">
         {steps.map(([title, body], i) => (
           <li key={title} className="method-row">
@@ -66,14 +67,14 @@ export function LimitsSection() {
   ] as const
   return (
     <section className="section section--limits" id="limits" aria-labelledby="limits-title">
-      <header className="section__head">
+      <SectionHead>
         <p className="section__eyebrow mono">{t('limits.eyebrow')}</p>
         <h2 id="limits-title" className="section__title">
           {t('limits.title.pre')}
           <span className="accent-text">{t('limits.title.accent')}</span>
           {t('limits.title.post')}
         </h2>
-      </header>
+      </SectionHead>
       <ul className="limits-list">
         {items.map(([strong, body]) => (
           <li key={strong}>
