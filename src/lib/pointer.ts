@@ -159,6 +159,13 @@ export function pointerField({
  */
 export function usePointerField<T extends HTMLElement = HTMLElement>(
   surfaceRef?: RefObject<HTMLElement>,
+  /**
+   * Stage-local pointer coordinates, published synchronously in the move
+   * handler. The light uses this to write its own transform before the next
+   * frame: going through `setField` + rAF costs one extra frame of trailing,
+   * which is ~3px at 700px wide but ~10px at 2560px wide (measured, 144Hz).
+   */
+  onPointer?: (vx: number, vy: number) => void,
 ) {
   const ref = useRef<T | null>(null)
   const [field, setField] = useState<PointerField>(REST)
@@ -199,6 +206,13 @@ export function usePointerField<T extends HTMLElement = HTMLElement>(
         heroVisible: visible,
         viewportWidth: window.innerWidth,
       })
+
+      // The follower is deliberately not part of `next`: its transform is
+      // written straight to the element in the move handler, so it lands in
+      // the same frame as the input instead of one frame after the React
+      // commit. Visibility and parallax still travel through state — they are
+      // eased by CSS and do not need per-frame precision.
+      if (measured.inside) onPointer?.(measured.vx, measured.vy)
 
       // Keep the light where it was when it switches off: `--m-on` fades it
       // out in place, and letting `--px` jump to 0 would drag the bloom into
@@ -265,7 +279,7 @@ export function usePointerField<T extends HTMLElement = HTMLElement>(
       observer?.disconnect()
       if (frame) cancelAnimationFrame(frame)
     }
-  }, [surfaceRef])
+  }, [surfaceRef, onPointer])
 
   return { ref, field }
 }

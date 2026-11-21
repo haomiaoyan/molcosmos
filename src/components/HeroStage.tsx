@@ -9,6 +9,8 @@ interface Props {
    * to keep the light alive out to the screen edges.
    */
   stageRef?: React.RefObject<HTMLDivElement>
+  /** The cursor bloom itself, written directly by the pointer handler. */
+  lightRef?: React.RefObject<HTMLDivElement>
 }
 
 /**
@@ -24,7 +26,7 @@ interface Props {
  * child positioned in stage coordinates would be carried along with it and
  * would never sit under the pointer (measured 146px of error).
  */
-export function HeroStage({ dotted = true, stageRef }: Props) {
+export function HeroStage({ dotted = true, stageRef, lightRef }: Props) {
   return (
     <div
       className={`hero__stage${dotted ? ' hero__stage--dotted' : ''}`}
@@ -34,7 +36,7 @@ export function HeroStage({ dotted = true, stageRef }: Props) {
       <div className="hero__stage-glow" />
       <div className="hero__stage-dots" />
       <div className="hero__stage-stars" />
-      <div className="hero__stage-viewport-light" />
+      <div className="hero__stage-viewport-light" ref={lightRef} />
     </div>
   )
 }

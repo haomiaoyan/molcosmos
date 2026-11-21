@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useI18n } from '../lib/i18n'
 import { pointerVars, usePointerField } from '../lib/pointer'
 import { resolveColor } from './rb/themeColor'
@@ -34,7 +34,29 @@ export function Hero({ onStart, onExplore }: Props) {
   // made the pointer die 130px short of each edge at 1440 (measured
   // `--m-on: 0` at clientX 100 and 1420).
   const stageRef = useRef<HTMLDivElement | null>(null)
-  const { ref, field } = usePointerField<HTMLElement>(stageRef)
+
+  // The bloom is a single composited layer. Writing its transform straight
+  // from the pointer handler removes the rAF + React commit from the hot
+  // path; the inline transform outranks the CSS rule that uses `--px/--py`,
+  // so the per-frame state update can no longer make it trail the cursor.
+  // Only the half-width is read from layout, once per resize — `vmin` sizing
+  // means it changes with the viewport, not with the pointer.
+  const lightRef = useRef<HTMLDivElement | null>(null)
+  const halfRef = useRef(0)
+  useEffect(() => {
+    const measure = () => { halfRef.current = (lightRef.current?.offsetWidth ?? 0) / 2 }
+    measure()
+    window.addEventListener('resize', measure, { passive: true })
+    return () => window.removeEventListener('resize', measure)
+  }, [])
+  const followPointer = useCallback((vx: number, vy: number) => {
+    const light = lightRef.current
+    if (!light) return
+    const half = halfRef.current || light.offsetWidth / 2
+    light.style.transform = `translate3d(${Math.round(vx - half)}px, ${Math.round(vy - half)}px, 0)`
+  }, [])
+
+  const { ref, field } = usePointerField<HTMLElement>(stageRef, followPointer)
 
   // Canvas effects need concrete colours; resolved at render so a theme
   // switch repaints the light in the new accent.
@@ -42,7 +64,7 @@ export function Hero({ onStart, onExplore }: Props) {
 
   return (
     <section className="hero" id="top" ref={ref} style={pointerVars(field)}>
-      <HeroStage stageRef={stageRef} />
+      <HeroStage stageRef={stageRef} lightRef={lightRef} />
       <div className="hero__inner">
         <div className="hero__molecule-slot">
           <HeroMolecule />
