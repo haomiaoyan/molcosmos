@@ -2,6 +2,18 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [未发布] — 光斑跟随修复 + 返回顶部（B5）
+
+### B5a · 光斑跟随（`7d42566`）
+
+- 首屏光斑的 transform 改在 `pointermove` 里直接写元素，`setField` + rAF 只负责视差与显隐。
+- 实测（Edge / GPU / 144Hz，扫过视口 70% 宽度）：空档从 700px 窗口 **3px**、1280px **5px**、1920px **8px**、2560px **10px** 全部降到 **0px**；落后帧数 1.0 → 0。原因不是渲染变慢，而是固定 1 帧延迟在更宽的窗口里对应更多 CSS px。
+
+### B5b · 返回顶部
+
+- 新增 `BackToTop`：Uiverse `afraid-falcon-17`（vinodjangid07）的圆形按钮皮肤，改成主题变量 + 中英双语 + 具名 class；点击沿用 `App` 已有的 gsap `scrollTo`。未引入新依赖。
+- 滚过 0.85 屏后出现，`aria-hidden` / `tabIndex` 同步切换；reduced-motion 下去掉位移与过渡但仍可点击。
+
 ## [未发布] — React Bits 视觉层（B1–B4）
 
 一批一批接入，每批一个提交、可独立回滚。仅改展示层：`CosmosScene.tsx`、算法 `lib/*.ts` 与测试文件均未改动。

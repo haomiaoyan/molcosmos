@@ -120,6 +120,89 @@ body {
   transition: width 0.12s linear;
 }
 
+/* Floating return-to-top control. Skin follows Uiverse afraid-falcon-17,
+   re-tokenised for the five themes and namespaced away from its `.button`. */
+.backtotop {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 55;
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgb(var(--accent-3-rgb) / 0.38);
+  border-radius: 50%;
+  background: var(--scrim-solid);
+  box-shadow: 0 0 0 4px rgb(var(--accent-3-rgb) / 0.25);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(12px) scale(0.94);
+  pointer-events: none;
+  transition:
+    width 0.3s ease,
+    border-radius 0.3s ease,
+    background-color 0.3s ease,
+    box-shadow 0.3s ease,
+    opacity 0.28s ease,
+    transform 0.28s ease;
+}
+
+.backtotop--visible {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.backtotop:hover,
+.backtotop:focus-visible {
+  width: 140px;
+  border-radius: 50px;
+  background: var(--accent-3);
+  color: #150d04;
+  box-shadow:
+    0 0 0 4px rgb(var(--accent-3-rgb) / 0.3),
+    0 12px 30px rgb(var(--accent-3-rgb) / 0.3);
+}
+
+.backtotop__icon {
+  position: absolute;
+  width: 12px;
+  height: auto;
+  fill: currentColor;
+  transition: transform 0.3s ease;
+}
+
+.backtotop:hover .backtotop__icon,
+.backtotop:focus-visible .backtotop__icon {
+  transform: translateY(-200%);
+}
+
+.backtotop__label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  white-space: nowrap;
+  font-size: 0;
+  opacity: 0;
+  transform: translate(-50%, calc(-50% + 16px));
+  transition:
+    font-size 0.3s ease,
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+
+.backtotop:hover .backtotop__label,
+.backtotop:focus-visible .backtotop__label {
+  font-size: 13px;
+  opacity: 1;
+  transform: translate(-50%, -50%);
+}
+
 .topnav {
   position: fixed;
   top: 3px;
@@ -3600,6 +3683,16 @@ html[lang='en'] .limits-list strong {
      the position is still information, only the motion is removed. */
   .topnav__glider {
     transition: none;
+  }
+
+  /* The control still appears and still scrolls; only its travel is removed. */
+  .backtotop,
+  .backtotop__icon,
+  .backtotop__label {
+    transition: none;
+  }
+  .backtotop {
+    transform: none;
   }
 }
 

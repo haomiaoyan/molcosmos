@@ -9,6 +9,7 @@ import { TimelineSection } from './components/TimelineSection'
 import { CosmosStats, FunnelSection, PipelineSection } from './components/Sections'
 import { Footer, LimitsSection, MethodSection } from './components/Sections2'
 import { Chrome } from './components/Sections2'
+import { BackToTop } from './components/BackToTop'
 import {
   findMoleculeById,
   rescoreMolecules,
@@ -192,6 +193,7 @@ function CosmosApp({ initialUrl }: { initialUrl: UrlState }) {
   return (
     <div className="app">
       <Chrome onEnter={scrollToTop} themeId={themeId} onTheme={setThemeId} />
+      <BackToTop onTop={scrollToTop} />
       <Hero onStart={enterCosmos} onExplore={triggerExploration} />
       <section className="cosmos" id="cosmos" ref={cosmosRef as React.RefObject<HTMLElement>}>
         <div className="cosmos__head">

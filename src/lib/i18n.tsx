@@ -47,6 +47,7 @@ const S = {
   'nav.githubProfile': ['作者的 GitHub', "Author's GitHub"],
   'nav.theme': ['背景配色', 'Background theme'],
   'nav.lang': ['切换语言', 'Switch language'],
+  'nav.backToTop': ['回到顶部', 'Back to Top'],
 
   /* ---------- themes ---------- */
   'theme.cosmos': ['深空', 'Deep space'],
